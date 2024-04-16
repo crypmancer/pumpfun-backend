@@ -22,7 +22,8 @@ export const authMiddleware = (
   // Verify token
   try {
     const decoded: any = jwt.verify(token, JWT_SECRET);
-    req.user = decoded.user;
+    console.log('decoded user ==> ', decoded);
+    req.user = decoded;
     next();
   } catch (error) {
     console.error("Something went wrong with the auth middleware", error);
