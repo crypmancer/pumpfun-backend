@@ -1,2 +1,3 @@
 import UserRouter from "./UserRoute";
-export { UserRouter }
+import LeaderBoardRouter from "./LeaderBoardRoute";
+export { UserRouter, LeaderBoardRouter }

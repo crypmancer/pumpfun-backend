@@ -1,19 +1,23 @@
 import mongoose from "mongoose";
 
 const HistorySchema = new mongoose.Schema({
-  type: {
+  token_name: {
     type: String,
-    default: "deposit" // deposit, withdraw, burn
+    unique: true,
+    required: true,
   },
-  signature: {
+  token_mint_address: {
     type: String,
-    require: true,
-    unique: true
+    unique: true,
+    required: true
   },
-  tokenAddress: {
+  token_avatar: {
     type: String
+  },
+  created_at: {
+    type: Date,
+    default: Date.now
   }
-
 });
 
 const HistoryModal = mongoose.model("history", HistorySchema);
