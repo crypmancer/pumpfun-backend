@@ -47,7 +47,7 @@ const options = {
             },
         ],
     },
-    apis: ["./routes/*.ts"],
+    apis: ["./routes/*.{ts, js}"],
 };
 const specs = (0, swagger_jsdoc_1.default)(options);
 // Load environment variables from .env file
