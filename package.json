@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "APEX-Backend",
   "main": "index.ts",
+  "license":"ISC",
   "pre-commit": [
     "ts.check",
     "build"
