@@ -1,3 +1,230 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - address
+ *       properties:
+ *         address:
+ *           type: string
+ *           description: User wallet address
+ *       example:
+ *         address: 4BqSA7g71jgMzTJPJCsY6WriXd8xtMqzpaLeRppYPUWF
+ *     UpdateUser:
+ *       type: object
+ *       required:
+ *         - username
+ *       properties:
+ *         username:
+ *           type: string
+ *           description: Username
+ *       example:
+ *         username: subsuer
+ *     Deposit:
+ *       type: object
+ *       required:
+ *         - tokenAddress
+ *         - walletAddress
+ *         - signature
+ *       properties:
+ *         tokenAddress:
+ *           type: string
+ *           description: token mint address
+ *         walletAddress:
+ *           type: string
+ *           description: wallet public key
+ *         signature:
+ *           type: string
+ *           description: transaction signature
+ *       example:
+ *         tokenAddress: 4BqSA7g71jgMzTJPJCsY6WriXd8xtMqzpaLeRppYPUWF
+ *         walletAddress: 4BqSA7g71jgMzTJPJCsY6WriXd8xtMqzpaLeRppYPUWF
+ *         signature: 5z4BiXv2UQXGVTVq2zdqfnDUXwYZHP4qRmevDmawb66SgbYZgPGouLAda7xW4ZdhN7ZZ8JruruUzhbWL1kycfAXN
+ *     Withdraw:
+ *       type: object
+ *       required:
+ *         - withdrawAmount
+ *         - walletAddress
+ *       properties:
+ *         withdrawAmount:
+ *           type: number
+ *           description: withdraw token amount
+ *         walletAddress:
+ *           type: string
+ *           description: wallet public key
+ *       example:
+ *         withdrawAmount: 1000
+ *         walletAddress: 4BqSA7g71jgMzTJPJCsY6WriXd8xtMqzpaLeRppYPUWF
+ *     TokenBurn:
+ *       type: object
+ *       required:
+ *         - tokenMintAddress
+ *         - amount
+ *         - burnDecimal
+ *       properties:
+ *         tokenMintAddress:
+ *           type: string
+ *           description: token mint address
+ *         amount:
+ *           type: number
+ *           description: token amount
+ *         burnDecimal:
+ *           type: number
+ *           description: decimal
+ *       example:
+ *         tokenMintAddress: 4BqSA7g71jgMzTJPJCsY6WriXd8xtMqzpaLeRppYPUWF
+ *         amount: 10000
+ *         burnDecimal: 9
+ *     Response:
+ *       type: object
+ *       required:
+ *         - success
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           description: true or false
+ *         msg:
+ *           type: string
+ *           description: string
+ *         token:
+ *           type: string,
+ *           description: generated token
+ *       example:
+ *         success: true
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: The users managing API
+ * /api/users/register:
+ *   post:
+ *     summary: Create a new user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       200:
+ *         description: Success? token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Response'
+ *       500:
+ *         description: Some server error
+ * /api/users/update:
+ *   put:
+ *     summary: Update user info
+ *     tags: [Users]
+ *     parameters:
+ *      - in: header
+ *        name: x-auth-token
+ *        description: Encoded code for user security
+ *        required: true
+ *        schema:
+ *          type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateUser'
+ *     responses:
+ *       200:
+ *         description: Deposit token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Response'
+ *       500:
+ *         description: Some server error
+ * /api/users/deposit:
+ *   post:
+ *     summary: Deposit token
+ *     tags: [Users]
+ *     parameters:
+ *      - in: header
+ *        name: x-auth-token
+ *        description: Encoded code for user security
+ *        required: true
+ *        schema:
+ *          type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Deposit'
+ *     responses:
+ *       200:
+ *         description: Deposit token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Response'
+ *       500:
+ *         description: Some server error
+ * /api/users/withdraw:
+ *   post:
+ *     summary: Withdraw token
+ *     tags: [Users]
+ *     parameters:
+ *      - in: header
+ *        name: x-auth-token
+ *        description: Encoded code for user security
+ *        required: true
+ *        schema:
+ *          type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Withdraw'
+ *     responses:
+ *       200:
+ *         description: Withdraw token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Response'
+ *       500:
+ *         description: Some server error
+ * /api/users/token-burn:
+ *   post:
+ *     summary: token burn
+ *     tags: [Users]
+ *     parameters:
+ *      - in: header
+ *        name: x-auth-token
+ *        description: Encoded code for user security
+ *        required: true
+ *        schema:
+ *          type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TokenBurn'
+ *     responses:
+ *       200:
+ *         description: Token burned.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Response'
+ *       500:
+ *         description: Some server error
+ */
+
 import { Request, Response, Router } from "express";
 import { check, validationResult } from "express-validator";
 import { encode, decode } from "js-base64";
@@ -6,11 +233,11 @@ import bcrypt from "bcryptjs";
 import jwt, { sign } from "jsonwebtoken";
 import base58 from "bs58";
 
-import User from "../../model/UserModel";
-import HistoryModal from "../../model/HistoryModel";
+import User from "../model/UserModel";
+import HistoryModal from "../model/HistoryModel";
 
-import { authMiddleware, AuthRequest } from "../../middleware";
-import { JWT_SECRET } from "../../config";
+import { authMiddleware, AuthRequest } from "../middleware";
+import { JWT_SECRET } from "../config";
 
 import {
   Connection,
@@ -30,7 +257,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
-import { IUser } from "../../utils/types";
+import { IUser } from "../utils/types";
 
 const connection = new Connection(clusterApiUrl("devnet"));
 
@@ -117,14 +344,15 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
 // // @route    PUT api/users/update
 // // @route    Update user
 // // @route    Private
-UserRouter.put('/update', authMiddleware, async (req:Request, res: Response) => {
+UserRouter.put('/update', authMiddleware, async (req:AuthRequest, res: Response) => {
   const { username } = req.body;
+  console.log("token user ===> ", req.user)
   try {
     //@ts-ignore
-    const isUser = await validateWallet(authMiddleware.user.walletAddress);
+    const isUser = await validateWallet(req.user.walletAddress);
     if(!isUser) return res.status(500).json({success: false, msg: "This wallet does not exist"});
     //@ts-ignore
-    const updatedUser = await User.findOneAndUpdate({walletAddress: authMiddleware.user.walletAddress}, {username: username}, {new: true});
+    const updatedUser = await User.findOneAndUpdate({walletAddress: req.user.walletAddress}, {username: username}, {new: true});
     
     if (updatedUser) {
       const payload = {
@@ -301,7 +529,7 @@ UserRouter.post("/withdraw", authMiddleware, async (req, res) => {
 UserRouter.post('/token-burn', authMiddleware, async (req, res) => {
   const { tokenMintAddress, amount, burnDecimal } = req.body;
   //@ts-ignore
-  const { walletAddress } = authMiddleware.user.walletAddress;
+  const { walletAddress } = req.user.walletAddress;
   const isuser = await validateWallet(walletAddress);
   if(!isuser) res.status(500).json({success: false, msg: "User does not exist!"})
   const user = await User.findOne({walletAddress: walletAddress});
@@ -355,8 +583,6 @@ UserRouter.post('/token-burn', authMiddleware, async (req, res) => {
 
   if (confirmation.value.err) { throw new Error("    ❌ - Transaction not confirmed.") }
     console.log('🔥 SUCCESSFUL BURN!🔥', '\n', `https://explorer.solana.com/tx/${txId}?cluster=devnet`);
-
-    const user = await User.findOne
 
     res.json({success: true, msg: "Successfully burned!"})
 
