@@ -6,7 +6,7 @@ import path from 'path';
 
 import { PORT, connectMongoDB } from "./config";
 import http from "http";
-import { UserRouter } from "./routes";
+import { UserRouter, LeaderBoardRouter } from "./routes";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -33,6 +33,7 @@ const server = http.createServer(app);
 
 // Define routes for different API endpoints
 app.use("/api/users", UserRouter);
+app.use("/api/leaderboard", LeaderBoardRouter);
 
 // Define a route to check if the backend server is running
 app.get("/", async (req: any, res: any) => {

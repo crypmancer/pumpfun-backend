@@ -7,7 +7,7 @@ import jwt, { sign } from "jsonwebtoken";
 import base58 from "bs58";
 
 import User from "../../model/UserModel";
-import HistoryModal from "../../model/HistoryModal";
+import HistoryModal from "../../model/HistoryModel";
 
 import { authMiddleware, AuthRequest } from "../../middleware";
 import { JWT_SECRET } from "../../config";
@@ -30,12 +30,16 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
+import { IUser } from "../../utils/types";
+
 const connection = new Connection(clusterApiUrl("devnet"));
 
 const wallet = Keypair.fromSecretKey(
   //@ts-ignore
   base58.decode(process.env.TREASURY_PRIVATE_KEY)
 );
+
+
 
 async function validateWallet(walletAddress: string) {
   const user = await User.findOne({ walletAddress });
@@ -53,6 +57,18 @@ async function getTransactionInfo(signature: string) {
   } else {
     return false;
   }
+}
+
+async function generateUserToken(user: IUser) {
+  const payload = {
+    _id: user?._id,
+    walletAddress: user?.walletAddress,
+    tokenBalance: user?.tokenBalance,
+    role: user?.role,
+    created_at: user?.created_at
+  }
+  const token = jwt.sign(payload ? payload : {}, JWT_SECRET, { expiresIn: "7 days" });
+  return token;
 }
 
 // Create a new instance of the Express Router
@@ -101,7 +117,32 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
 // // @route    PUT api/users/update
 // // @route    Update user
 // // @route    Private
-// UserRouter
+UserRouter.put('/update', authMiddleware, async (req:Request, res: Response) => {
+  const { username } = req.body;
+  try {
+    //@ts-ignore
+    const isUser = await validateWallet(authMiddleware.user.walletAddress);
+    if(!isUser) return res.status(500).json({success: false, msg: "This wallet does not exist"});
+    //@ts-ignore
+    const updatedUser = await User.findOneAndUpdate({walletAddress: authMiddleware.user.walletAddress}, {username: username}, {new: true});
+    
+    if (updatedUser) {
+      const payload = {
+        _id: updatedUser?._id,
+        walletAddress: updatedUser?.walletAddress,
+        tokenBalance: updatedUser?.tokenBalance,
+        role: updatedUser?.role,
+        created_at: updatedUser?.created_at
+      };
+      const token = jwt.sign(payload ? payload : {}, JWT_SECRET, { expiresIn: "7 days" });
+      res.json({success: true, token: token })
+    }
+    
+  } catch (error) {
+    console.log('Update user error ===> ', error);
+    res.status(500).json({success: false, msg: error})
+  }
+})
 
 // @route    POST api/users/deposit
 // @desc     Deposit token
