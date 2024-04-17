@@ -14,6 +14,6 @@ catch (error) {
     process.exit(1);
 }
 // export const MONGO_URL = `mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
-exports.MONGO_URL = 'mongodb://mongo:2eHGFDfgH-BF-2fb52CehAcC5f1cDD3f@monorail.proxy.rlwy.net:31793/deadbear';
+exports.MONGO_URL = 'mongodb://mongo:jYTkfvpPKxbGydZZiXBfFkUdypkNKQDm@monorail.proxy.rlwy.net:41057';
 exports.PORT = process.env.PORT || 9000;
 exports.JWT_SECRET = process.env.JWT_SECRET || "JWT_SECRET";
