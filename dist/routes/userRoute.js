@@ -277,9 +277,11 @@ function generateUserToken(user) {
             walletAddress: user === null || user === void 0 ? void 0 : user.walletAddress,
             tokenBalance: user === null || user === void 0 ? void 0 : user.tokenBalance,
             role: user === null || user === void 0 ? void 0 : user.role,
-            created_at: user === null || user === void 0 ? void 0 : user.created_at
+            created_at: user === null || user === void 0 ? void 0 : user.created_at,
         };
-        const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, { expiresIn: "7 days" });
+        const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
+            expiresIn: "7 days",
+        });
         return token;
     });
 }
@@ -297,12 +299,15 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
             const user = yield UserModel_1.default.findOne({ walletAddress: address });
             const payload = {
                 _id: user === null || user === void 0 ? void 0 : user._id,
+                username: user === null || user === void 0 ? void 0 : user.username,
                 walletAddress: user === null || user === void 0 ? void 0 : user.walletAddress,
                 tokenBalance: user === null || user === void 0 ? void 0 : user.tokenBalance,
                 role: user === null || user === void 0 ? void 0 : user.role,
-                created_at: user === null || user === void 0 ? void 0 : user.created_at
+                created_at: user === null || user === void 0 ? void 0 : user.created_at,
             };
-            const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, { expiresIn: "7 days" });
+            const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
+                expiresIn: "7 days",
+            });
             res.json({ success: true, token });
         }
         else {
@@ -312,10 +317,11 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
             const newUser = yield newUserSchem.save();
             const payload = {
                 _id: newUser === null || newUser === void 0 ? void 0 : newUser._id,
+                username: newUser === null || newUser === void 0 ? void 0 : newUser.username,
                 walletAddress: newUser === null || newUser === void 0 ? void 0 : newUser.walletAddress,
                 tokenBalance: newUser === null || newUser === void 0 ? void 0 : newUser.tokenBalance,
                 role: newUser === null || newUser === void 0 ? void 0 : newUser.role,
-                created_at: newUser === null || newUser === void 0 ? void 0 : newUser.created_at
+                created_at: newUser === null || newUser === void 0 ? void 0 : newUser.created_at,
             };
             const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
             res.json({ success: true, token });
@@ -329,14 +335,16 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
 // // @route    PUT api/users/update
 // // @route    Update user
 // // @route    Private
-UserRouter.put('/update', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+UserRouter.put("/update", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username } = req.body;
     console.log("token user ===> ", req.user);
     try {
         //@ts-ignore
         const isUser = yield validateWallet(req.user.walletAddress);
         if (!isUser)
-            return res.status(500).json({ success: false, msg: "This wallet does not exist" });
+            return res
+                .status(500)
+                .json({ success: false, msg: "This wallet does not exist" });
         //@ts-ignore
         const updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: req.user.walletAddress }, { username: username }, { new: true });
         if (updatedUser) {
@@ -345,14 +353,17 @@ UserRouter.put('/update', middleware_1.authMiddleware, (req, res) => __awaiter(v
                 walletAddress: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.walletAddress,
                 tokenBalance: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.tokenBalance,
                 role: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.role,
-                created_at: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.created_at
+                username: updatedUser.username,
+                created_at: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.created_at,
             };
-            const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, { expiresIn: "7 days" });
+            const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
+                expiresIn: "7 days",
+            });
             res.json({ success: true, token: token });
         }
     }
     catch (error) {
-        console.log('Update user error ===> ', error);
+        console.log("Update user error ===> ", error);
         res.status(500).json({ success: false, msg: error });
     }
 }));
@@ -370,12 +381,18 @@ UserRouter.post("/deposit", middleware_1.authMiddleware, (req, res) => __awaiter
                 .json({ success: false, msg: "This wallet is not registered!" });
         const txDetails = yield getTransactionInfo(signature);
         if (!txDetails) {
-            return res.status(500).json({ success: false, msg: "Invalid transaction! didnt get txhash" });
+            return res
+                .status(500)
+                .json({
+                success: false,
+                msg: "Invalid transaction! didnt get txhash",
+            });
         }
         else {
             const treasuryTkAccount = 
             //@ts-ignore
-            txDetails.transaction.message.instructions[2].parsed.info.multisigAuthority;
+            txDetails.transaction.message.instructions[2].parsed.info
+                .multisigAuthority;
             const destination = 
             //@ts-ignore
             txDetails.transaction.message.instructions[2].parsed.info.destination;
@@ -386,11 +403,19 @@ UserRouter.post("/deposit", middleware_1.authMiddleware, (req, res) => __awaiter
                 tokenAddress == tokenMintAddress) {
                 const amount = Number(
                 //@ts-ignore
-                txDetails.transaction.message.instructions[2].parsed.info.tokenAmount.amount) / 1000000000;
+                txDetails.transaction.message.instructions[2].parsed.info
+                    .tokenAmount.amount) / 1000000000;
                 //@ts-ignore
-                const signExist = yield HistoryModel_1.default.findOne({ signature: signature });
+                const signExist = yield HistoryModel_1.default.findOne({
+                    signature: signature,
+                });
                 if (signExist)
-                    return res.status(500).json({ success: false, msg: "This transaction is already registered!" });
+                    return res
+                        .status(500)
+                        .json({
+                        success: false,
+                        msg: "This transaction is already registered!",
+                    });
                 const newTransaction = new HistoryModel_1.default({
                     signature: signature,
                 });
@@ -404,7 +429,9 @@ UserRouter.post("/deposit", middleware_1.authMiddleware, (req, res) => __awaiter
                 res.json({ success: true, token: token });
             }
             else {
-                res.status(500).json({ success: false, msg: "Invalid transaction! cant confirm" });
+                res
+                    .status(500)
+                    .json({ success: false, msg: "Invalid transaction! cant confirm" });
             }
         }
     }
@@ -425,9 +452,7 @@ UserRouter.post("/withdraw", middleware_1.authMiddleware, (req, res) => __awaite
                 .status(500)
                 .json({ success: false, msg: "This wallet doesn't exist!" });
         if (isUser.tokenBalance < withdrawAmount)
-            return res
-                .status(500)
-                .json({
+            return res.status(500).json({
                 success: false,
                 msg: "You don't have enough balance to withdraw!",
             });
@@ -449,11 +474,11 @@ UserRouter.post("/withdraw", middleware_1.authMiddleware, (req, res) => __awaite
         if (signedTransaction) {
             const newTransactin = new HistoryModel_1.default({
                 signature: signedTransaction,
-                type: 'withdraw'
+                type: "withdraw",
             });
             const transactionResult = yield newTransactin.save();
             if (transactionResult) {
-                const updatedUser = yield UserModel_1.default.updateOne({ walletAddress: walletAddress }, { tokenBalance: (isUser.tokenBalance - withdrawAmount) }, { new: true });
+                const updatedUser = yield UserModel_1.default.updateOne({ walletAddress: walletAddress }, { tokenBalance: isUser.tokenBalance - withdrawAmount }, { new: true });
                 const token = jsonwebtoken_1.default.sign(updatedUser, config_1.JWT_SECRET, {
                     expiresIn: "7 days",
                 });
@@ -480,7 +505,7 @@ UserRouter.post("/withdraw", middleware_1.authMiddleware, (req, res) => __awaite
 // @route    POST api/users/token-burn
 // @desc     Burning token
 // @access   Private
-UserRouter.post('/token-burn', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+UserRouter.post("/token-burn", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { tokenMintAddress, amount, burnDecimal } = req.body;
     //@ts-ignore
     const { walletAddress } = req.user.walletAddress;
@@ -489,29 +514,32 @@ UserRouter.post('/token-burn', middleware_1.authMiddleware, (req, res) => __awai
         res.status(500).json({ success: false, msg: "User does not exist!" });
     const user = yield UserModel_1.default.findOne({ walletAddress: walletAddress });
     if (user && (user === null || user === void 0 ? void 0 : user.tokenBalance) < amount)
-        return res.status(500).json({ success: false, msg: "You don't have enough token to burn!" });
+        return res
+            .status(500)
+            .json({ success: false, msg: "You don't have enough token to burn!" });
     try {
         // Step 1 fetch associated token account address
         console.log("Step 1 0 Fetch Token Account");
+        const account = yield (0, spl_token_1.getAssociatedTokenAddress)(
         //@ts-ignore
-        const account = yield (0, spl_token_1.getAssociatedTokenAddress)(new web3_js_1.PublicKey(process.env.TOKEN_MINT_ADDRESS), wallet.publicKey);
+        new web3_js_1.PublicKey(process.env.TOKEN_MINT_ADDRESS), wallet.publicKey);
         console.log(`    ✅ - Associated Token Account Address: ${account.toString()}`);
         // Step 2 Create Burn Instruction
         console.log("Step 2 - Crate Burn Instructions");
         const burnIx = (0, spl_token_1.createBurnCheckedInstruction)(account, 
         //@ts-ignore
-        new web3_js_1.PublicKey(process.env.TOKEN_MINT_ADDRESS), wallet.publicKey, amount * (Math.pow(10, Number(burnDecimal))), burnDecimal);
+        new web3_js_1.PublicKey(process.env.TOKEN_MINT_ADDRESS), wallet.publicKey, amount * Math.pow(10, Number(burnDecimal)), burnDecimal);
         console.log(`    ✅ - Burn Instruction Created`);
         // Step 3 - Fetch Blockhash
         console.log("Step 3 - Fetch Blockhash");
         const { blockhash, lastValidBlockHeight } = yield connection.getLatestBlockhash("finalized");
         console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
         // Step 4 - Assemble Transaction
-        console.log('Step 4 - Assemble Transaction');
+        console.log("Step 4 - Assemble Transaction");
         const messageV0 = new web3_js_1.TransactionMessage({
             payerKey: wallet.publicKey,
             recentBlockhash: blockhash,
-            instructions: [burnIx]
+            instructions: [burnIx],
         }).compileToV0Message();
         const transaction = new web3_js_1.VersionedTransaction(messageV0);
         transaction.sign([wallet]);
@@ -523,16 +551,63 @@ UserRouter.post('/token-burn', middleware_1.authMiddleware, (req, res) => __awai
         const confirmation = yield connection.confirmTransaction({
             signature: txId,
             blockhash: blockhash,
-            lastValidBlockHeight: lastValidBlockHeight
+            lastValidBlockHeight: lastValidBlockHeight,
         });
         if (confirmation.value.err) {
             throw new mongoose_1.Error("    ❌ - Transaction not confirmed.");
         }
-        console.log('🔥 SUCCESSFUL BURN!🔥', '\n', `https://explorer.solana.com/tx/${txId}?cluster=devnet`);
+        console.log("🔥 SUCCESSFUL BURN!🔥", "\n", `https://explorer.solana.com/tx/${txId}?cluster=devnet`);
         res.json({ success: true, msg: "Successfully burned!" });
     }
     catch (error) {
         console.log("Burning error ===> ", error);
+        res.status(500).json({ success: false, msg: error });
+    }
+}));
+// @route    POST api/users/burn
+UserRouter.post("/burn", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { signature, amount } = req.body;
+    //@ts-ignore
+    const { _id } = req.user;
+    const user = yield UserModel_1.default.findById(_id);
+    if (!user)
+        return res
+            .status(500)
+            .json({ success: false, msg: "User does not exist!" });
+    try {
+        const updateUser = yield UserModel_1.default.findOneAndUpdate({ _id: _id }, { tokenBalance: user.tokenBalance + Number(amount) }, { new: true });
+        const newHistory = new HistoryModel_1.default({
+            signature: signature,
+            type: "burn",
+            userId: _id,
+            amount: amount
+        });
+        yield newHistory.save();
+        const payload = {
+            _id: updateUser === null || updateUser === void 0 ? void 0 : updateUser._id,
+            username: updateUser === null || updateUser === void 0 ? void 0 : updateUser.username,
+            walletAddress: updateUser === null || updateUser === void 0 ? void 0 : updateUser.walletAddress,
+            tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
+            role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
+            created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
+        };
+        const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
+        res.json({ success: true, token: token });
+    }
+    catch (error) {
+        console.log("burn error => ", error);
+    }
+}));
+UserRouter.get('/recentburn', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const { _id } = req.user;
+    try {
+        const history = yield HistoryModel_1.default.find({ type: 'burn', userId: _id }).limit(10);
+        console.log(history);
+        res.json({ histories: history, success: true });
+    }
+    catch (error) {
+        console.log("getting history error ==> ", error);
         res.status(500).json({ success: false, msg: error });
     }
 }));

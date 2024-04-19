@@ -45,7 +45,7 @@ const specs = swaggerJsdoc(options);
 dotenv.config();
 
 // Connect to the MongoDB database
-// connectMongoDB();
+connectMongoDB();
 
 // Create an instance of the Express application
 const app = express();

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
+import { IUser } from "../utils/types";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -22,7 +23,6 @@ export const authMiddleware = (
   // Verify token
   try {
     const decoded: any = jwt.verify(token, JWT_SECRET);
-    console.log('decoded user ==> ', decoded);
     req.user = decoded;
     next();
   } catch (error) {

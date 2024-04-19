@@ -14,8 +14,20 @@ const HistorySchema = new mongoose_1.default.Schema({
         required: true,
         unique: true
     },
+    userId: {
+        type: String,
+        required: true
+    },
+    amount: {
+        type: Number,
+        required: true
+    },
     tokenAddress: {
         type: String
+    },
+    created_at: {
+        type: Date,
+        default: Date.now
     }
 });
 const HistoryModal = mongoose_1.default.model("history", HistorySchema);

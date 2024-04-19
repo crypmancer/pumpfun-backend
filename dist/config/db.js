@@ -34,7 +34,8 @@ const connectMongoDB = () => __awaiter(void 0, void 0, void 0, function* () {
         try {
             if (config_1.MONGO_URL) {
                 const connection = yield mongoose_1.default.connect(config_1.MONGO_URL);
-                console.log(`MONGODB CONNECTED : ${connection.connection.host}`);
+                console.log(`MONGODB CONNECTED`);
+                // console.log(`MONGODB CONNECTED : ${connection.connection.host}`);
                 isConnected = true;
             }
             else {

@@ -16,7 +16,6 @@ const authMiddleware = (req, res, next) => {
     // Verify token
     try {
         const decoded = jsonwebtoken_1.default.verify(token, config_1.JWT_SECRET);
-        console.log('decoded user ==> ', decoded);
         req.user = decoded;
         next();
     }
