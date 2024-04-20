@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 const HistorySchema = new mongoose.Schema({
   type: {
@@ -11,12 +11,15 @@ const HistorySchema = new mongoose.Schema({
     unique: true
   },
   userId: {
-    type: String,
+    type: Types.ObjectId,
     required: true
   },
   amount: {
     type: Number,
     required: true
+  },
+  missionId: {
+    type: String
   },
   tokenAddress: {
     type: String
@@ -27,6 +30,6 @@ const HistorySchema = new mongoose.Schema({
   }
 });
 
-const HistoryModal = mongoose.model("history", HistorySchema);
+const HistoryModel = mongoose.model("history", HistorySchema);
 
-export default HistoryModal;
+export default HistoryModel;

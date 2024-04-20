@@ -234,7 +234,7 @@ import jwt, { sign } from "jsonwebtoken";
 import base58 from "bs58";
 
 import User from "../model/UserModel";
-import HistoryModal from "../model/HistoryModel";
+import HistoryModel from "../model/HistoryModel";
 
 import { authMiddleware, AuthRequest } from "../middleware";
 import { JWT_SECRET } from "../config";
@@ -434,7 +434,7 @@ UserRouter.post(
                 .tokenAmount.amount
             ) / 1000000000;
           //@ts-ignore
-          const signExist = await HistoryModal.findOne({
+          const signExist = await HistoryModel.findOne({
             signature: signature,
           });
           if (signExist)
@@ -444,7 +444,7 @@ UserRouter.post(
                 success: false,
                 msg: "This transaction is already registered!",
               });
-          const newTransaction = new HistoryModal({
+          const newTransaction = new HistoryModel({
             signature: signature,
           });
           await newTransaction.save();
@@ -520,7 +520,7 @@ UserRouter.post("/withdraw", authMiddleware, async (req, res) => {
     );
 
     if (signedTransaction) {
-      const newTransactin = new HistoryModal({
+      const newTransactin = new HistoryModel({
         signature: signedTransaction,
         type: "withdraw",
       });
@@ -654,7 +654,7 @@ UserRouter.post("/burn", authMiddleware, async (req, res) => {
       { new: true }
     );
 
-    const newHistory = new HistoryModal({
+    const newHistory = new HistoryModel({
       signature: signature,
       type: "burn",
       userId: _id,
@@ -684,7 +684,7 @@ UserRouter.get('/recentburn', authMiddleware, async (req, res) => {
   //@ts-ignore
   const {_id} = req.user;
   try {
-    const history = await HistoryModal.find({type: 'burn', userId: _id}).limit(10);
+    const history = await HistoryModel.find({type: 'burn', userId: _id}).limit(10);
     console.log(history);
     res.json({histories: history, success: true});
   } catch (error) {

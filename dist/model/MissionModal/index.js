@@ -24,34 +24,37 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const HistorySchema = new mongoose_1.default.Schema({
-    type: {
+const MissionSchema = new mongoose_1.default.Schema({
+    title: {
         type: String,
-        default: "deposit" // deposit, withdraw, burn
-    },
-    signature: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    userId: {
-        type: mongoose_1.Types.ObjectId,
         required: true
     },
-    amount: {
+    explanation: {
+        type: String,
+        required: true
+    },
+    goal: {
         type: Number,
-        required: true
+        default: 100
     },
-    missionId: {
-        type: String
-    },
-    tokenAddress: {
-        type: String
-    },
-    created_at: {
-        type: Date,
-        default: Date.now
+    users: [{
+            userId: {
+                type: mongoose_1.Types.ObjectId,
+                ref: 'user'
+            },
+            amount: {
+                type: Number,
+                required: true
+            },
+            created_at: {
+                type: Date,
+                default: Date.now
+            }
+        }],
+    state: {
+        type: Number,
+        default: 0
     }
 });
-const HistoryModel = mongoose_1.default.model("history", HistorySchema);
-exports.default = HistoryModel;
+const MissionModel = mongoose_1.default.model("mission", MissionSchema);
+exports.default = MissionModel;

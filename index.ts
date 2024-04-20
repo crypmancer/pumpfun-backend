@@ -10,6 +10,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express'
 import UserRouter from "./routes/userRoute";
 import LeaderBoardRouter from "./routes/leaderRoute";
+import MissionRouter from "./routes/missionRoute";
 
 // Swagger options
 const options = {
@@ -69,6 +70,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 // Define routes for different API endpoints
 app.use("/api/users", UserRouter);
 app.use("/api/leaderboard", LeaderBoardRouter);
+app.use('/api/missions', MissionRouter);
 
 // Define a route to check if the backend server is running
 app.get("/", async (req: any, res: any) => {

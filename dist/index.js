@@ -23,6 +23,7 @@ const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
 const userRoute_1 = __importDefault(require("./routes/userRoute"));
 const leaderRoute_1 = __importDefault(require("./routes/leaderRoute"));
+const missionRoute_1 = __importDefault(require("./routes/missionRoute"));
 // Swagger options
 const options = {
     definition: {
@@ -70,6 +71,7 @@ app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.de
 // Define routes for different API endpoints
 app.use("/api/users", userRoute_1.default);
 app.use("/api/leaderboard", leaderRoute_1.default);
+app.use('/api/missions', missionRoute_1.default);
 // Define a route to check if the backend server is running
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send("Backend Server is Running now!");

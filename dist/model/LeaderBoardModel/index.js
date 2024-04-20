@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const HistorySchema = new mongoose_1.default.Schema({
+const LeaderBoardModelSchema = new mongoose_1.default.Schema({
     token_name: {
         type: String,
         unique: true,
@@ -23,5 +23,5 @@ const HistorySchema = new mongoose_1.default.Schema({
         default: Date.now
     }
 });
-const HistoryModal = mongoose_1.default.model("history", HistorySchema);
-exports.default = HistoryModal;
+const LeaderBoardModel = mongoose_1.default.model("leaderboard", LeaderBoardModelSchema);
+exports.default = LeaderBoardModel;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const HistorySchema = new mongoose.Schema({
+const LeaderBoardModelSchema = new mongoose.Schema({
   token_name: {
     type: String,
     unique: true,
@@ -20,6 +20,6 @@ const HistorySchema = new mongoose.Schema({
   }
 });
 
-const HistoryModal = mongoose.model("history", HistorySchema);
+const LeaderBoardModel = mongoose.model("leaderboard", LeaderBoardModelSchema);
 
-export default HistoryModal;
+export default LeaderBoardModel;
