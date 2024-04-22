@@ -319,7 +319,6 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
 // // @route    Private
 UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username } = req.body;
-    console.log("token user ===> ", req.file);
     try {
         //@ts-ignore
         const isUser = yield validateWallet(req.user.walletAddress);
