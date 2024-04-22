@@ -221,7 +221,7 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
         }
         catch (error) {
             console.log("transaction valid error => ", error);
-            res.status(500).json({ err: "Transaction is not valid!" });
+            res.status(500).json({ err: error });
         }
     }
     catch (error) {
