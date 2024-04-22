@@ -226,7 +226,6 @@
  */
 
 import { Request, Response, Router } from "express";
-import { Error } from "mongoose";
 import jwt, { sign } from "jsonwebtoken";
 import base58 from "bs58";
 
@@ -240,20 +239,7 @@ import {
   Connection,
   clusterApiUrl,
   Keypair,
-  Transaction,
-  PublicKey,
-  TransactionMessage,
-  VersionedTransaction,
-  TransactionSignature,
 } from "@solana/web3.js";
-import {
-  createBurnCheckedInstruction,
-  createTransferInstruction,
-  getAssociatedTokenAddress,
-} from "@solana/spl-token";
-
-import { IUser } from "../utils/types";
-import { Signature } from "typescript";
 
 const connection = new Connection(
   process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : clusterApiUrl("devnet")
@@ -293,7 +279,6 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
   try {
     const { address } = req.body;
     const isUser = await validateWallet(address);
-    console.log("isuser", isUser);
     if (isUser) {
       const user = await User.findOne({ walletAddress: address });
       const payload = {
@@ -330,15 +315,14 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
   }
 });
 
-// // @route    PUT api/users/update
+// // @route    POST api/users/update
 // // @route    Update user
 // // @route    Private
-UserRouter.put(
+UserRouter.post(
   "/update",
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     const { username } = req.body;
-    console.log("token user ===> ", req.user);
     try {
       //@ts-ignore
       const isUser = await validateWallet(req.user.walletAddress);

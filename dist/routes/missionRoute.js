@@ -60,7 +60,7 @@ MissionRouter.get("/getOpened", (req, res) => __awaiter(void 0, void 0, void 0, 
         res.status(500).json({ success: false, msg: error });
     }
 }));
-MissionRouter.post("/addMission", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, content, goal } = req.body;
         const newMissionSchem = new MissionModal_1.default({
@@ -79,7 +79,7 @@ MissionRouter.post("/addMission", (req, res) => __awaiter(void 0, void 0, void 0
 // @route    GET api/mission/getOne/:missionId
 // @desc     Get one mission
 // @access   Private
-MissionRouter.get("/getOne/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.get("/getOne/:missionId", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { missionId } = req.params;
         const mission = yield MissionModal_1.default.findById(missionId);
