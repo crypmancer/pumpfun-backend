@@ -259,7 +259,9 @@ import {
 
 import { IUser } from "../utils/types";
 
-const connection = new Connection(clusterApiUrl("devnet"));
+const connection = new Connection(
+  process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : clusterApiUrl("devnet")
+);
 
 const wallet = Keypair.fromSecretKey(
   //@ts-ignore

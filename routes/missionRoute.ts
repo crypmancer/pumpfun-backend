@@ -50,6 +50,15 @@ MissionRouter.get("/getAll", async (req: Request, res: Response) => {
     res.status(500).json({ success: false, msg: error });
   }
 });
+MissionRouter.get("/getOpened", async (req: Request, res: Response) => {
+  try {
+    const missions = await MissionModel.find({state: 0});
+    res.json({missions})
+  } catch (error) {
+    console.log("opend mission error ==> ", error);
+    res.status(500).json({success: false, msg: error});
+  }
+})
 
 MissionRouter.post("/addMission", async (req: Request, res: Response) => {
   try {

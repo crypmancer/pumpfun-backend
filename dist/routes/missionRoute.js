@@ -39,6 +39,16 @@ MissionRouter.get("/getAll", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(500).json({ success: false, msg: error });
     }
 }));
+MissionRouter.get("/getOpened", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const missions = yield MissionModal_1.default.find({ state: 0 });
+        res.json({ missions });
+    }
+    catch (error) {
+        console.log("opend mission error ==> ", error);
+        res.status(500).json({ success: false, msg: error });
+    }
+}));
 MissionRouter.post("/addMission", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, content, goal } = req.body;

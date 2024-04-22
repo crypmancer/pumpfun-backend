@@ -247,7 +247,7 @@ const middleware_1 = require("../middleware");
 const config_1 = require("../config");
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
-const connection = new web3_js_1.Connection((0, web3_js_1.clusterApiUrl)("devnet"));
+const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
 const wallet = web3_js_1.Keypair.fromSecretKey(
 //@ts-ignore
 bs58_1.default.decode(process.env.TREASURY_PRIVATE_KEY));
