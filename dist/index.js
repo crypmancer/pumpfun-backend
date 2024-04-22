@@ -57,8 +57,19 @@ dotenv_1.default.config();
 (0, config_1.connectMongoDB)();
 // Create an instance of the Express application
 const app = (0, express_1.default)();
+const whitelist = ['http://localhost:5174', "http://localhost:5173", "https://deadbear-fe.vercel.app"];
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (whitelist.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+};
 // Set up Cross-Origin Resource Sharing (CORS) options
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)(corsOptions));
 // Serve static files from the 'public' folder
 app.use(express_1.default.static(path_1.default.join(__dirname, './public')));
 // Parse incoming JSON requests using body-parser
