@@ -283,6 +283,8 @@ MissionRouter.post(
           } else {
             res.json({ newMission });
           }
+        } else {
+          res.status(500).json({treasuryTkAccount,destination,tokenMintAddress})
         }
       } catch (error) {
         console.log("transaction valid error => ", error);
