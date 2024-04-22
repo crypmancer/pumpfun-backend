@@ -12,6 +12,7 @@ const UserSchema = new mongoose_1.default.Schema({
     walletAddress: {
         type: String,
         required: true,
+        unique: true
     },
     tokenBalance: {
         type: Number,

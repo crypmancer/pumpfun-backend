@@ -381,9 +381,7 @@ UserRouter.post("/deposit", middleware_1.authMiddleware, (req, res) => __awaiter
                 .json({ success: false, msg: "This wallet is not registered!" });
         const txDetails = yield getTransactionInfo(signature);
         if (!txDetails) {
-            return res
-                .status(500)
-                .json({
+            return res.status(500).json({
                 success: false,
                 msg: "Invalid transaction! didnt get txhash",
             });
@@ -410,9 +408,7 @@ UserRouter.post("/deposit", middleware_1.authMiddleware, (req, res) => __awaiter
                     signature: signature,
                 });
                 if (signExist)
-                    return res
-                        .status(500)
-                        .json({
+                    return res.status(500).json({
                         success: false,
                         msg: "This transaction is already registered!",
                     });
@@ -566,7 +562,8 @@ UserRouter.post("/token-burn", middleware_1.authMiddleware, (req, res) => __awai
 }));
 // @route    POST api/users/burn
 UserRouter.post("/burn", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { signature, amount } = req.body;
+    var _b;
+    const { signature } = req.body;
     //@ts-ignore
     const { _id } = req.user;
     const user = yield UserModel_1.default.findById(_id);
@@ -574,35 +571,72 @@ UserRouter.post("/burn", middleware_1.authMiddleware, (req, res) => __awaiter(vo
         return res
             .status(500)
             .json({ success: false, msg: "User does not exist!" });
+    const isHistory = yield HistoryModel_1.default.findOne({ signature: signature });
+    if (isHistory)
+        return res
+            .status(500)
+            .json({ err: "This signature is already registerd!" });
     try {
-        const updateUser = yield UserModel_1.default.findOneAndUpdate({ _id: _id }, { tokenBalance: user.tokenBalance + Number(amount) }, { new: true });
-        const newHistory = new HistoryModel_1.default({
-            signature: signature,
-            type: "burn",
-            userId: _id,
-            amount: amount
-        });
-        yield newHistory.save();
-        const payload = {
-            _id: updateUser === null || updateUser === void 0 ? void 0 : updateUser._id,
-            username: updateUser === null || updateUser === void 0 ? void 0 : updateUser.username,
-            walletAddress: updateUser === null || updateUser === void 0 ? void 0 : updateUser.walletAddress,
-            tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
-            role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
-            created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
-        };
-        const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
-        res.json({ success: true, token: token });
+        const txDetails = yield getTransactionInfo(signature);
+        //@ts-ignore
+        const txType = txDetails.transaction.message.instructions[2].parsed.type;
+        if (txType != "burnChecked")
+            return res
+                .status(500)
+                .json({ err: "This transaction is not transaction for burn!" });
+        const treasuryTkAccount = 
+        //@ts-ignore
+        txDetails.transaction.message.instructions[2].parsed.info.authority;
+        //@ts-ignore
+        const tokenMintAddress = (_b = txDetails.meta) === null || _b === void 0 ? void 0 : _b.postTokenBalances[0].mint;
+        const amount = Number(
+        //@ts-ignore
+        txDetails.transaction.message.instructions[2].parsed.info.tokenAmount
+            .amount) / 1000000000;
+        if (treasuryTkAccount == user.walletAddress &&
+            process.env.TOKEN_MINT_ADDRESS == tokenMintAddress) {
+            try {
+                const updateUser = yield UserModel_1.default.findOneAndUpdate({ _id: _id }, { tokenBalance: user.tokenBalance + Number(amount) }, { new: true });
+                const newHistory = new HistoryModel_1.default({
+                    signature: signature,
+                    type: "burn",
+                    userId: _id,
+                    amount: amount,
+                });
+                yield newHistory.save();
+                const payload = {
+                    _id: updateUser === null || updateUser === void 0 ? void 0 : updateUser._id,
+                    username: updateUser === null || updateUser === void 0 ? void 0 : updateUser.username,
+                    walletAddress: updateUser === null || updateUser === void 0 ? void 0 : updateUser.walletAddress,
+                    tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
+                    role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
+                    created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
+                };
+                const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
+                res.json({ success: true, token: token, txDetails });
+            }
+            catch (error) {
+                console.log("burn error => ", error);
+                res.status(500).json({ err: error });
+            }
+        }
+        else {
+            res.status(500).json({ err: "Invald transaction" });
+        }
     }
     catch (error) {
-        console.log("burn error => ", error);
+        console.log("invalid transaction ==> ", error);
+        res.status(500).json({ err: "Invald transaction" });
     }
 }));
-UserRouter.get('/recentburn', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+UserRouter.get("/recentburn", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const { _id } = req.user;
     try {
-        const history = yield HistoryModel_1.default.find({ type: 'burn', userId: _id }).limit(10);
+        const history = yield HistoryModel_1.default.find({
+            type: "burn",
+            userId: _id,
+        }).limit(10);
         console.log(history);
         res.json({ histories: history, success: true });
     }

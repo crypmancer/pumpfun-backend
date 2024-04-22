@@ -2,7 +2,6 @@ import { Request, Response, Router } from "express";
 import UserModel from "../model/UserModel";
 import MissionModel from "../model/MissionModal";
 import { authMiddleware } from "../middleware";
-import mongoose from "mongoose";
 
 import base58 from "bs58";
 
@@ -34,6 +33,19 @@ const wallet = Keypair.fromSecretKey(
   base58.decode(process.env.TREASURY_PRIVATE_KEY)
 );
 
+
+async function getTransactionInfo(signature: string) {
+  const transactioninfo = await connection.getParsedTransaction(
+    signature,
+    "confirmed"
+  );
+  if (transactioninfo) {
+    return transactioninfo;
+  } else {
+    return false;
+  }
+}
+
 // Create a new instance of the Express Router
 const MissionRouter = Router();
 
@@ -52,15 +64,15 @@ MissionRouter.get("/getAll", async (req: Request, res: Response) => {
 });
 MissionRouter.get("/getOpened", async (req: Request, res: Response) => {
   try {
-    const missions = await MissionModel.find({state: 0});
-    res.json({missions})
+    const missions = await MissionModel.find({ state: 0 });
+    res.json({ missions });
   } catch (error) {
     console.log("opend mission error ==> ", error);
-    res.status(500).json({success: false, msg: error});
+    res.status(500).json({ success: false, msg: error });
   }
-})
+});
 
-MissionRouter.post("/addMission", async (req: Request, res: Response) => {
+MissionRouter.post("/addMission", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { title, content, goal } = req.body;
 
@@ -82,7 +94,7 @@ MissionRouter.post("/addMission", async (req: Request, res: Response) => {
 // @desc     Get one mission
 // @access   Private
 
-MissionRouter.get("/getOne/:missionId", async (req: Request, res: Response) => {
+MissionRouter.get("/getOne/:missionId", authMiddleware, async (req: Request, res: Response) => {
   try {
     const { missionId } = req.params;
     const mission = await MissionModel.findById(missionId);
@@ -91,7 +103,6 @@ MissionRouter.get("/getOne/:missionId", async (req: Request, res: Response) => {
       for (let i = 0; i < mission.users.length; i++) {
         totalBurn += mission.users[i].amount;
       }
-
       res.json({ mission, totalBurn });
     } else {
       res.status(500).json({ err: "This mission does not exist!" });
@@ -113,124 +124,169 @@ MissionRouter.post(
     try {
       //@ts-ignore
       const { _id } = req.user;
-      const { amount, missionId, signature } = req.body;
-
-      console.log("user id ", _id);
-      console.log("amount ", amount);
-      console.log("missionId ", missionId);
-      console.log("signature", signature);
+      const { missionId, signature } = req.body;
 
       const mission = await MissionModel.findById(missionId);
 
       if (!mission) {
         return res.status(500).json({ err: "This mission does not exist!" });
       }
-      const userIndex = mission.users.findIndex((user: any) => {
-        console.log("user object id ==> ", user.userId.toString());
-        console.log("user object id ==> ", new mongoose.Types.ObjectId(_id));
-        return user.userId.toString() === _id;
-      });
+      if (mission.state == 1)
+        return res
+          .status(500)
+          .json({ err: "Oops, this mission was already done!" });
+      const user = await UserModel.findById(_id);
 
-      console.log("user index ==> ", userIndex);
+      if (!user)
+        return res
+          .status(500)
+          .json({ success: false, msg: "User does not exist!" });
 
-      if (userIndex === -1) {
-        mission.users.push({ userId: _id, amount: amount });
-      } else {
-        mission.users[userIndex].amount += Number(amount);
-      }
+      const isHistory = await HistoryModel.findOne({ signature: signature });
 
-      const newMission = await mission.save();
+      if (isHistory)
+        return res
+          .status(500)
+          .json({ err: "This signature is already registerd!" });
 
-    //   const newHistory = new HistoryModel({
-    //     type: "burn",
-    //     signature: signature,
-    //     userId: _id,
-    //     amount: amount,
-    //   });
+      try {
+        const txDetails = await getTransactionInfo(signature);
+        const txType =
+        //@ts-ignore
+          txDetails.transaction.message.instructions[2].parsed.type;
+        if (txType != "transfer")
+          return res
+            .status(500)
+            .json({ err: "This transaction is not transaction for transfer!" });
 
-    //   await newHistory.save();
-
-    //   const user = await UserModel.findOne({ _id: _id });
-    //   const currentBalance = user?.tokenBalance;
-    //   await UserModel.updateOne(
-    //     { _id: _id },
-    //     { tokenBalance: currentBalance ? currentBalance : 0 + amount },
-    //     { new: true }
-    //   );
-
-      const totalAmount = newMission.users.reduce(
-        (sum: number, user: any) => sum + user.amount,
-        0
-      );
-      console.log("total amount ==> ", totalAmount);
-      if (newMission.goal <= totalAmount) {
-        await MissionModel.findOneAndUpdate({ _id: missionId }, { state: 1 });
-        /// token burn function here
-
-        // Step 1 fetch associated token account address
-        console.log("Step 1 0 Fetch Token Account");
-        const account = await getAssociatedTokenAddress(
+        const treasuryTkAccount =
           //@ts-ignore
-          new PublicKey(process.env.TOKEN_MINT_ADDRESS),
-          wallet.publicKey
-        );
-        console.log(
-          `    ✅ - Associated Token Account Address: ${account.toString()}`
-        );
-
-        // Step 2 Create Burn Instruction
-        console.log("Step 2 - Crate Burn Instructions");
-        const burnIx = createBurnCheckedInstruction(
-          account,
+          txDetails.transaction.message.instructions[2].parsed.info.authority;
+        const destination =
           //@ts-ignore
-          new PublicKey(process.env.TOKEN_MINT_ADDRESS),
-          wallet.publicKey,
-          newMission.goal * 10 ** 9,
-          9
-        );
-        console.log(`    ✅ - Burn Instruction Created`);
+          txDetails.transaction.message.instructions[2].parsed.info.destination;
+        //@ts-ignore
+        const tokenMintAddress = txDetails.meta?.postTokenBalances[0].mint;
+        if (
+          destination == process.env.TREASURY_TOKEN_ACCOUNT_ADDRESS &&
+          treasuryTkAccount == user?.walletAddress &&
+          process.env.TOKEN_MINT_ADDRESS == tokenMintAddress
+        ) {
+          const amount =
+            Number(
+              //@ts-ignore
+              txDetails.transaction.message.instructions[2].parsed.info
+                .amount
+            ) / 1000000000;
 
-        // Step 3 - Fetch Blockhash
-        console.log("Step 3 - Fetch Blockhash");
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash("finalized");
-        console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
+          const userIndex = mission.users.findIndex((user: any) => {
+            return user.userId.toString() === _id;
+          });
 
-        // Step 4 - Assemble Transaction
-        console.log("Step 4 - Assemble Transaction");
-        const messageV0 = new TransactionMessage({
-          payerKey: wallet.publicKey,
-          recentBlockhash: blockhash,
-          instructions: [burnIx],
-        }).compileToV0Message();
+          if (userIndex === -1) {
+            mission.users.push({ userId: _id, amount: amount });
+          } else {
+            mission.users[userIndex].amount += Number(amount);
+          }
 
-        const transaction = new VersionedTransaction(messageV0);
-        transaction.sign([wallet]);
-        console.log(`    ✅ - Transaction Created and Signed`);
+          const newMission = await mission.save();
 
-        // Step 5 - Execute & confirm transaction
-        console.log("Step 5 - execute & confirm transaction");
-        const txId = await connection.sendTransaction(transaction);
-        console.log("    ✅ - Transaction sent to network");
+          const newHistory = new HistoryModel({
+            type: "burn",
+            signature: signature,
+            userId: _id,
+            amount: amount,
+            missionId: missionId,
+          });
 
-        const confirmation = await connection.confirmTransaction({
-          signature: txId,
-          blockhash: blockhash,
-          lastValidBlockHeight: lastValidBlockHeight,
-        });
+          await newHistory.save();
 
-        if (confirmation.value.err) {
-          throw new Error("❌ - Transaction not confirmed.");
+          const currentBalance = user?.tokenBalance;
+          await UserModel.updateOne(
+            { _id: _id },
+            { tokenBalance: currentBalance ? currentBalance : 0 + amount },
+            { new: true }
+          );
+
+          const totalAmount = newMission.users.reduce(
+            (sum: number, user: any) => sum + user.amount,
+            0
+          );
+          if (newMission.goal <= totalAmount) {
+            await MissionModel.findOneAndUpdate(
+              { _id: missionId },
+              { state: 1 }
+            );
+            /// token burn function here
+
+            // Step 1 fetch associated token account address
+            const account = await getAssociatedTokenAddress(
+              //@ts-ignore
+              new PublicKey(process.env.TOKEN_MINT_ADDRESS),
+              wallet.publicKey
+            );
+            console.log(
+              `    ✅ - Associated Token Account Address: ${account.toString()}`
+            );
+
+            // Step 2 Create Burn Instruction
+            console.log("Step 2 - Crate Burn Instructions");
+            const burnIx = createBurnCheckedInstruction(
+              account,
+              //@ts-ignore
+              new PublicKey(process.env.TOKEN_MINT_ADDRESS),
+              wallet.publicKey,
+              newMission.goal * 10 ** 9,
+              9
+            );
+            console.log(`    ✅ - Burn Instruction Created`);
+
+            // Step 3 - Fetch Blockhash
+            console.log("Step 3 - Fetch Blockhash");
+            const { blockhash, lastValidBlockHeight } =
+              await connection.getLatestBlockhash("finalized");
+            console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
+
+            // Step 4 - Assemble Transaction
+            console.log("Step 4 - Assemble Transaction");
+            const messageV0 = new TransactionMessage({
+              payerKey: wallet.publicKey,
+              recentBlockhash: blockhash,
+              instructions: [burnIx],
+            }).compileToV0Message();
+
+            const transaction = new VersionedTransaction(messageV0);
+            transaction.sign([wallet]);
+            console.log(`    ✅ - Transaction Created and Signed`);
+
+            // Step 5 - Execute & confirm transaction
+            console.log("Step 5 - execute & confirm transaction");
+            const txId = await connection.sendTransaction(transaction);
+            console.log("    ✅ - Transaction sent to network");
+
+            const confirmation = await connection.confirmTransaction({
+              signature: txId,
+              blockhash: blockhash,
+              lastValidBlockHeight: lastValidBlockHeight,
+            });
+
+            if (confirmation.value.err) {
+              throw new Error("❌ - Transaction not confirmed.");
+            }
+            console.log(
+              "🔥 SUCCESSFUL BURN!🔥",
+              "\n",
+              `https://explorer.solana.com/tx/${txId}`
+            );
+
+            res.json({ missionClosed: true });
+          } else {
+            res.json({ newMission });
+          }
         }
-        console.log(
-          "🔥 SUCCESSFUL BURN!🔥",
-          "\n",
-          `https://explorer.solana.com/tx/${txId}`
-        );
-
-        res.json({ missionClosed: true });
-      } else {
-        res.json({ newMission });
+      } catch (error) {
+        console.log("transaction valid error => ", error);
+        res.status(500).json({ err: "Transaction is not valid!" });
       }
     } catch (error) {
       console.log("/joinUser error => ", error);
@@ -252,10 +308,10 @@ MissionRouter.get(
         missionId: missionId,
         userId: _id,
       });
-      res.json({histories});
+      res.json({ histories });
     } catch (error) {
-        console.log("getting hostory error ==> ", error);
-        res.status(500).json({err: error});
+      console.log("getting hostory error ==> ", error);
+      res.status(500).json({ err: error });
     }
   }
 );
