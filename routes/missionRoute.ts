@@ -286,7 +286,7 @@ MissionRouter.post(
         }
       } catch (error) {
         console.log("transaction valid error => ", error);
-        res.status(500).json({ err: "Transaction is not valid!" });
+        res.status(500).json({ err: error });
       }
     } catch (error) {
       console.log("/joinUser error => ", error);
