@@ -4,7 +4,7 @@ const UserSchema = new mongoose.Schema({
   username: {
     type: String,
     default: function(){
-      return "User" + Math.ceil(Math.random() * 1000000)
+      return Math.ceil(Math.random() * 1000000)
     },
     unique: true
   },

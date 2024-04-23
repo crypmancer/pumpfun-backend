@@ -360,7 +360,6 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
 UserRouter.post("/checkName", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username } = req.body;
-        console.log("new username", username);
         const isUser = yield UserModel_2.default.findOne({ username });
         if (isUser) {
             res.json({ isUser: true });

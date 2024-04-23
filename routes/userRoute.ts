@@ -368,7 +368,6 @@ UserRouter.post(
   async (req: Request, res: Response) => {
     try {
       const { username } = req.body;
-      console.log("new username", username);
       const isUser = await UserModel.findOne({ username });
       if (isUser) {
         res.json({ isUser: true });
