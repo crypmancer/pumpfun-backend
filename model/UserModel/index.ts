@@ -3,7 +3,10 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema({
   username: {
     type: String,
-    default: 'user',
+    default: function(){
+      return "User" + Math.ceil(Math.random() * 1000000)
+    },
+    unique: true
   },
   walletAddress: { 
     type: String, 

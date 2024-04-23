@@ -245,6 +245,7 @@ const HistoryModel_1 = __importDefault(require("../model/HistoryModel"));
 const middleware_1 = require("../middleware");
 const config_1 = require("../config");
 const web3_js_1 = require("@solana/web3.js");
+const UserModel_2 = __importDefault(require("../model/UserModel"));
 const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
 const wallet = web3_js_1.Keypair.fromSecretKey(
 //@ts-ignore
@@ -314,9 +315,9 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
         res.status(500).json({ success: false, msg: error });
     }
 }));
-// // @route    POST api/users/update
-// // @route    Update user
-// // @route    Private
+// @route    POST api/users/update
+// @route    Update user
+// @route    Private
 UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username } = req.body;
     try {
@@ -326,6 +327,14 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
             return res
                 .status(500)
                 .json({ success: false, msg: "This wallet does not exist" });
+        const sameNameUser = yield UserModel_2.default.findOne({ username: username });
+        console.log("samenameuser", sameNameUser);
+        if (sameNameUser)
+            return res
+                .status(500)
+                .json({
+                msg: "This name is already exist! Please try with other name!",
+            });
         //@ts-ignore
         const updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: req.user.walletAddress }, { username: username }, { new: true });
         if (updatedUser) {
@@ -346,6 +355,23 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
     catch (error) {
         console.log("Update user error ===> ", error);
         res.status(500).json({ success: false, msg: error });
+    }
+}));
+UserRouter.post("/checkName", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { username } = req.body;
+        console.log("new username", username);
+        const isUser = yield UserModel_2.default.findOne({ username });
+        if (isUser) {
+            res.json({ isUser: true });
+        }
+        else {
+            res.json({ isUser: false });
+        }
+    }
+    catch (error) {
+        console.log("checkusername error ==> ", error);
+        res.status(500).json({ err: error });
     }
 }));
 // @route    POST api/users/burn
@@ -431,6 +457,66 @@ UserRouter.get("/recentburn", middleware_1.authMiddleware, (req, res) => __await
     catch (error) {
         console.log("getting history error ==> ", error);
         res.status(500).json({ success: false, msg: error });
+    }
+}));
+UserRouter.post("/admin-burn", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    try {
+        const { signature } = req.body;
+        const { walletAddress, _id, tokenBalance } = req.user;
+        console.log('signature ==> ', signature);
+        if (walletAddress != process.env.TREASURY_WALLET_ADDRESS)
+            return res.status(500).json({ msg: "Server error!" });
+        const isHistory = yield HistoryModel_1.default.findOne({ signature: signature });
+        if (isHistory)
+            return res
+                .status(500)
+                .json({ err: "This signature is already registerd!" });
+        const txDetails = yield getTransactionInfo(signature);
+        //@ts-ignore
+        const txType = txDetails.transaction.message.instructions[2].parsed.type;
+        if (txType != "burnChecked")
+            return res
+                .status(500)
+                .json({ err: "This transaction is not transaction for burn!" });
+        const treasuryTkAccount = 
+        //@ts-ignore
+        txDetails.transaction.message.instructions[2].parsed.info.authority;
+        //@ts-ignore
+        const tokenMintAddress = (_b = txDetails.meta) === null || _b === void 0 ? void 0 : _b.postTokenBalances[0].mint;
+        const amount = Number(
+        //@ts-ignore
+        txDetails.transaction.message.instructions[2].parsed.info.tokenAmount
+            .amount) / 1000000000;
+        if (treasuryTkAccount == walletAddress &&
+            process.env.TOKEN_MINT_ADDRESS == tokenMintAddress) {
+            try {
+                const updateUser = yield UserModel_1.default.findOneAndUpdate({ _id: _id }, { tokenBalance: tokenBalance - Number(amount) }, { new: true });
+                if (updateUser) {
+                    const payload = {
+                        _id: updateUser === null || updateUser === void 0 ? void 0 : updateUser._id,
+                        username: updateUser === null || updateUser === void 0 ? void 0 : updateUser.username,
+                        walletAddress: updateUser === null || updateUser === void 0 ? void 0 : updateUser.walletAddress,
+                        tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
+                        role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
+                        created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
+                    };
+                    const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
+                    res.json({ success: true, token: token });
+                }
+                else {
+                    res.json({ msg: "Server error!" });
+                }
+            }
+            catch (error) {
+                console.log("admin burning error", error);
+                res.status(500).json({ msg: "Server error!" });
+            }
+        }
+    }
+    catch (error) {
+        console.log("admin burn error", error);
+        res.status(500).json({ msg: error });
     }
 }));
 exports.default = UserRouter;

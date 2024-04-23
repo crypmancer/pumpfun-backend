@@ -7,7 +7,10 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const UserSchema = new mongoose_1.default.Schema({
     username: {
         type: String,
-        default: 'user',
+        default: function () {
+            return "User" + Math.ceil(Math.random() * 1000000);
+        },
+        unique: true
     },
     walletAddress: {
         type: String,

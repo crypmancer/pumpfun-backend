@@ -18,7 +18,6 @@ const MissionModal_1 = __importDefault(require("../model/MissionModal"));
 const middleware_1 = require("../middleware");
 const bs58_1 = __importDefault(require("bs58"));
 const web3_js_1 = require("@solana/web3.js");
-const spl_token_1 = require("@solana/spl-token");
 const HistoryModel_1 = __importDefault(require("../model/HistoryModel"));
 const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
 const wallet = web3_js_1.Keypair.fromSecretKey(
@@ -63,6 +62,9 @@ MissionRouter.get("/getOpened", (req, res) => __awaiter(void 0, void 0, void 0, 
 MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, content, goal } = req.body;
+        const { walletAddress } = req.user;
+        if (walletAddress != process.env.TREASURY_WALLET_ADDRESS)
+            return res.status(500).json({ msg: "Server error!" });
         const newMissionSchem = new MissionModal_1.default({
             title: title,
             explanation: content,
@@ -174,49 +176,73 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
                 if (newMission.goal <= totalAmount) {
                     yield MissionModal_1.default.findOneAndUpdate({ _id: missionId }, { state: 1 });
                     /// token burn function here
-                    // Step 1 fetch associated token account address
-                    const account = yield (0, spl_token_1.getAssociatedTokenAddress)(
-                    //@ts-ignore
-                    new web3_js_1.PublicKey(process.env.TOKEN_MINT_ADDRESS), wallet.publicKey);
-                    console.log(`    ✅ - Associated Token Account Address: ${account.toString()}`);
-                    // Step 2 Create Burn Instruction
-                    console.log("Step 2 - Crate Burn Instructions");
-                    const burnIx = (0, spl_token_1.createBurnCheckedInstruction)(account, 
-                    //@ts-ignore
-                    new web3_js_1.PublicKey(process.env.TOKEN_MINT_ADDRESS), wallet.publicKey, newMission.goal * Math.pow(10, 9), 9);
-                    console.log(`    ✅ - Burn Instruction Created`);
-                    // Step 3 - Fetch Blockhash
-                    console.log("Step 3 - Fetch Blockhash");
-                    const { blockhash, lastValidBlockHeight } = yield connection.getLatestBlockhash("finalized");
-                    console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
-                    // Step 4 - Assemble Transaction
-                    console.log("Step 4 - Assemble Transaction");
-                    const messageV0 = new web3_js_1.TransactionMessage({
-                        payerKey: wallet.publicKey,
-                        recentBlockhash: blockhash,
-                        instructions: [burnIx],
-                    }).compileToV0Message();
-                    const transaction = new web3_js_1.VersionedTransaction(messageV0);
-                    transaction.sign([wallet]);
-                    console.log(`    ✅ - Transaction Created and Signed`);
-                    // Step 5 - Execute & confirm transaction
-                    console.log("Step 5 - execute & confirm transaction");
-                    const txId = yield connection.sendTransaction(transaction);
-                    console.log("    ✅ - Transaction sent to network");
-                    const confirmation = yield connection.confirmTransaction({
-                        signature: txId,
-                        blockhash: blockhash,
-                        lastValidBlockHeight: lastValidBlockHeight,
-                    });
-                    if (confirmation.value.err) {
-                        throw new Error("❌ - Transaction not confirmed.");
+                    // // Step 1 fetch associated token account address
+                    // const account = await getAssociatedTokenAddress(
+                    //   //@ts-ignore
+                    //   new PublicKey(process.env.TOKEN_MINT_ADDRESS),
+                    //   wallet.publicKey
+                    // );
+                    // console.log(
+                    //   `    ✅ - Associated Token Account Address: ${account.toString()}`
+                    // );
+                    // // Step 2 Create Burn Instruction
+                    // console.log("Step 2 - Crate Burn Instructions");
+                    // const burnIx = createBurnCheckedInstruction(
+                    //   account,
+                    //   //@ts-ignore
+                    //   new PublicKey(process.env.TOKEN_MINT_ADDRESS),
+                    //   wallet.publicKey,
+                    //   newMission.goal * 10 ** 9,
+                    //   9
+                    // );
+                    // console.log(`    ✅ - Burn Instruction Created`);
+                    // // Step 3 - Fetch Blockhash
+                    // console.log("Step 3 - Fetch Blockhash");
+                    // const { blockhash, lastValidBlockHeight } =
+                    //   await connection.getLatestBlockhash("finalized");
+                    // console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
+                    // // Step 4 - Assemble Transaction
+                    // console.log("Step 4 - Assemble Transaction");
+                    // const messageV0 = new TransactionMessage({
+                    //   payerKey: wallet.publicKey,
+                    //   recentBlockhash: blockhash,
+                    //   instructions: [burnIx],
+                    // }).compileToV0Message();
+                    // const transaction = new VersionedTransaction(messageV0);
+                    // transaction.sign([wallet]);
+                    // console.log(`    ✅ - Transaction Created and Signed`);
+                    // // Step 5 - Execute & confirm transaction
+                    // console.log("Step 5 - execute & confirm transaction");
+                    // const txId = await connection.sendTransaction(transaction);
+                    // console.log("    ✅ - Transaction sent to network");
+                    // const confirmation = await connection.confirmTransaction({
+                    //   signature: txId,
+                    //   blockhash: blockhash,
+                    //   lastValidBlockHeight: lastValidBlockHeight,
+                    // });
+                    // if (confirmation.value.err) {
+                    //   throw new Error("❌ - Transaction not confirmed.");
+                    // }
+                    // console.log(
+                    //   "🔥 SUCCESSFUL BURN!🔥",
+                    //   "\n",
+                    //   `https://explorer.solana.com/tx/${txId}`
+                    // );
+                    // Increase site balance
+                    const updateSiteBalance = yield UserModel_1.default.findOneAndUpdate({ walletAddress: process.env.TREASURY_WALLET_ADDRESS }, { $inc: { tokenBalance: totalAmount * 0.8 } });
+                    if (updateSiteBalance) {
+                        res.json({ missionClosed: true });
                     }
-                    console.log("🔥 SUCCESSFUL BURN!🔥", "\n", `https://explorer.solana.com/tx/${txId}`);
-                    res.json({ missionClosed: true });
+                    else {
+                        res.status(500).json({ err: "There is unexpected error!" });
+                    }
                 }
                 else {
                     res.json({ newMission });
                 }
+            }
+            else {
+                res.status(500).json({ treasuryTkAccount, destination, tokenMintAddress });
             }
         }
         catch (error) {

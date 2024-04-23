@@ -235,11 +235,8 @@ import HistoryModel from "../model/HistoryModel";
 import { authMiddleware, AuthRequest } from "../middleware";
 import { JWT_SECRET } from "../config";
 
-import {
-  Connection,
-  clusterApiUrl,
-  Keypair,
-} from "@solana/web3.js";
+import { Connection, clusterApiUrl, Keypair } from "@solana/web3.js";
+import UserModel from "../model/UserModel";
 
 const connection = new Connection(
   process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : clusterApiUrl("devnet")
@@ -267,7 +264,6 @@ async function getTransactionInfo(signature: string) {
     return false;
   }
 }
-
 
 // Create a new instance of the Express Router
 const UserRouter = Router();
@@ -315,9 +311,9 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
   }
 });
 
-// // @route    POST api/users/update
-// // @route    Update user
-// // @route    Private
+// @route    POST api/users/update
+// @route    Update user
+// @route    Private
 UserRouter.post(
   "/update",
   authMiddleware,
@@ -330,6 +326,14 @@ UserRouter.post(
         return res
           .status(500)
           .json({ success: false, msg: "This wallet does not exist" });
+      const sameNameUser = await UserModel.findOne({ username: username });
+      console.log("samenameuser", sameNameUser);
+      if (sameNameUser)
+        return res
+          .status(500)
+          .json({
+            msg: "This name is already exist! Please try with other name!",
+          });
       //@ts-ignore
       const updatedUser = await User.findOneAndUpdate(
         { walletAddress: req.user.walletAddress },
@@ -354,6 +358,26 @@ UserRouter.post(
     } catch (error) {
       console.log("Update user error ===> ", error);
       res.status(500).json({ success: false, msg: error });
+    }
+  }
+);
+
+UserRouter.post(
+  "/checkName",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    try {
+      const { username } = req.body;
+      console.log("new username", username);
+      const isUser = await UserModel.findOne({ username });
+      if (isUser) {
+        res.json({ isUser: true });
+      } else {
+        res.json({ isUser: false });
+      }
+    } catch (error) {
+      console.log("checkusername error ==> ", error);
+      res.status(500).json({ err: error });
     }
   }
 );
@@ -454,6 +478,75 @@ UserRouter.get("/recentburn", authMiddleware, async (req, res) => {
   } catch (error) {
     console.log("getting history error ==> ", error);
     res.status(500).json({ success: false, msg: error });
+  }
+});
+
+UserRouter.post("/admin-burn", authMiddleware, async (req: any, res) => {
+  try {
+    const { signature } = req.body;
+    const { walletAddress, _id, tokenBalance } = req.user;
+    console.log('signature ==> ', signature)
+    if (walletAddress != process.env.TREASURY_WALLET_ADDRESS)
+      return res.status(500).json({ msg: "Server error!" });
+    const isHistory = await HistoryModel.findOne({ signature: signature });
+    if (isHistory)
+      return res
+        .status(500)
+        .json({ err: "This signature is already registerd!" });
+
+    const txDetails = await getTransactionInfo(signature);
+    //@ts-ignore
+    const txType = txDetails.transaction.message.instructions[2].parsed.type;
+    if (txType != "burnChecked")
+      return res
+        .status(500)
+        .json({ err: "This transaction is not transaction for burn!" });
+
+    const treasuryTkAccount =
+      //@ts-ignore
+      txDetails.transaction.message.instructions[2].parsed.info.authority;
+    //@ts-ignore
+    const tokenMintAddress = txDetails.meta?.postTokenBalances[0].mint;
+    const amount =
+      Number(
+        //@ts-ignore
+        txDetails.transaction.message.instructions[2].parsed.info.tokenAmount
+          .amount
+      ) / 1000000000;
+
+    if (
+      treasuryTkAccount == walletAddress &&
+      process.env.TOKEN_MINT_ADDRESS == tokenMintAddress
+    ) {
+      try {
+        const updateUser = await User.findOneAndUpdate(
+          { _id: _id },
+          { tokenBalance: tokenBalance - Number(amount) },
+          { new: true }
+        );
+        if (updateUser) {
+          const payload = {
+            _id: updateUser?._id,
+            username: updateUser?.username,
+            walletAddress: updateUser?.walletAddress,
+            tokenBalance: updateUser?.tokenBalance,
+            role: updateUser?.role,
+            created_at: updateUser?.created_at,
+          };
+  
+          const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });
+          res.json({ success: true, token: token });
+        } else {
+          res.json({ msg: "Server error!" });
+        }
+      } catch (error) {
+        console.log("admin burning error", error);
+        res.status(500).json({ msg: "Server error!" });
+      }
+    }
+  } catch (error) {
+    console.log("admin burn error", error);
+    res.status(500).json({ msg: error });
   }
 });
 
