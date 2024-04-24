@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -23,6 +23,22 @@ const UserSchema = new mongoose.Schema({
   referrerId: { 
     type: String 
   },
+  soloMissions: [
+    {
+      missionId: {
+        type: String,
+        required: true,
+      },
+      amount: {
+        type: Number,
+        default: 0
+      },
+      state: {
+        type: Number,
+        default: 0  // first 0, complete: 1, burnt: 2
+      }
+    }
+  ],
   created_at: { 
     type: Date, 
     default: Date.now 

@@ -14,11 +14,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const UserModel_1 = __importDefault(require("../model/UserModel"));
-const MissionModal_1 = __importDefault(require("../model/MissionModal"));
+const MissionModel_1 = __importDefault(require("../model/MissionModel"));
 const middleware_1 = require("../middleware");
 const bs58_1 = __importDefault(require("bs58"));
 const web3_js_1 = require("@solana/web3.js");
 const HistoryModel_1 = __importDefault(require("../model/HistoryModel"));
+const SoloMissionModel_1 = __importDefault(require("../model/SoloMissionModel"));
 const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
 const wallet = web3_js_1.Keypair.fromSecretKey(
 //@ts-ignore
@@ -41,7 +42,7 @@ const MissionRouter = (0, express_1.Router)();
 // @access   Public
 MissionRouter.get("/getAll", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const missions = yield MissionModal_1.default.find({}).populate("users.userId");
+        const missions = yield MissionModel_1.default.find({}).populate("users.userId");
         res.json({ missions });
     }
     catch (error) {
@@ -51,7 +52,7 @@ MissionRouter.get("/getAll", (req, res) => __awaiter(void 0, void 0, void 0, fun
 }));
 MissionRouter.get("/getOpened", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const missions = yield MissionModal_1.default.find({ state: 0 });
+        const missions = yield MissionModel_1.default.find({ state: 0 });
         res.json({ missions });
     }
     catch (error) {
@@ -65,7 +66,7 @@ MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __a
         const { walletAddress } = req.user;
         if (walletAddress != process.env.TREASURY_WALLET_ADDRESS)
             return res.status(500).json({ msg: "Server error!" });
-        const newMissionSchem = new MissionModal_1.default({
+        const newMissionSchem = new MissionModel_1.default({
             title: title,
             explanation: content,
             goal: goal,
@@ -84,7 +85,7 @@ MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __a
 MissionRouter.get("/getOne/:missionId", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { missionId } = req.params;
-        const mission = yield MissionModal_1.default.findById(missionId);
+        const mission = yield MissionModel_1.default.findById(missionId);
         if (mission) {
             let totalBurn = 0;
             for (let i = 0; i < mission.users.length; i++) {
@@ -110,7 +111,7 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
         //@ts-ignore
         const { _id } = req.user;
         const { missionId, signature } = req.body;
-        const mission = yield MissionModal_1.default.findById(missionId);
+        const mission = yield MissionModel_1.default.findById(missionId);
         if (!mission) {
             return res.status(500).json({ err: "This mission does not exist!" });
         }
@@ -174,7 +175,7 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
                 yield UserModel_1.default.updateOne({ _id: _id }, { tokenBalance: currentBalance ? currentBalance : 0 + amount }, { new: true });
                 const totalAmount = newMission.users.reduce((sum, user) => sum + user.amount, 0);
                 if (newMission.goal <= totalAmount) {
-                    yield MissionModal_1.default.findOneAndUpdate({ _id: missionId }, { state: 1 });
+                    yield MissionModel_1.default.findOneAndUpdate({ _id: missionId }, { state: 1 });
                     /// token burn function here
                     // // Step 1 fetch associated token account address
                     // const account = await getAssociatedTokenAddress(
@@ -255,6 +256,119 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
         res.status(500).json({ err: error });
     }
 }));
+// @route    POST api/mission/addsolomission
+// @desc     POST add solo mission
+// @access   Private
+MissionRouter.post('/addsolomission', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { title, content, goal } = req.body;
+        const newMissionSchem = new SoloMissionModel_1.default({
+            title: title,
+            explanation: content,
+            goal: goal
+        });
+        yield newMissionSchem.save();
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.log('add solo mission error', error);
+        res.status(500).json({ err: error });
+    }
+}));
+// @route    GET api/mission/solomissions
+// @desc     GET get solo mission list
+// @access   Private
+MissionRouter.get('/solomissions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const missions = yield SoloMissionModel_1.default.find({});
+        res.json({ missions });
+    }
+    catch (error) {
+        console.log('solo mission error', error);
+        res.status(500).json({ err: error });
+    }
+}));
+// @route    GET api/mission/solomissions
+// @desc     GET get solo mission list
+// @access   Private
+MissionRouter.get('/solomissions/:missionId', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { missionId } = req.params;
+        const mission = yield SoloMissionModel_1.default.findOne({ _id: missionId });
+        res.json({ mission });
+    }
+    catch (error) {
+        console.log('solo mission error', error);
+        res.status(500).json({ err: error });
+    }
+}));
+// @route    POST api/mission/solomissions/burn
+// @desc     POST burn in solo mission
+// @access   Private
+// MissionRouter.post('/solomissions/burn', authMiddleware, async (req: Request, res: Response) => {
+//   try {
+//     const {missionId, signature} = req.body;
+//     const { _id } = req.params;
+//   //@ts-ignore
+//   const { _id } = req.user;
+//   const user = await UserModel.findById(_id);
+//   if (!user)
+//     return res
+//       .status(500)
+//       .json({ success: false, msg: "User does not exist!" });
+//   const isHistory = await HistoryModel.findOne({ signature: signature });
+//   if (isHistory)
+//     return res
+//       .status(500)
+//       .json({ err: "This signature is already registerd!" });
+//   try {
+//     const txDetails = await getTransactionInfo(signature);
+//     //@ts-ignore
+//     const txType = txDetails.transaction.message.instructions[2].parsed.type;
+//     if (txType != "burnChecked")
+//       return res
+//         .status(500)
+//         .json({ err: "This transaction is not transaction for burn!" });
+//     const treasuryTkAccount =
+//       //@ts-ignore
+//       txDetails.transaction.message.instructions[2].parsed.info.authority;
+//     //@ts-ignore
+//     const tokenMintAddress = txDetails.meta?.postTokenBalances[0].mint;
+//     const amount =
+//       Number(
+//         //@ts-ignore
+//         txDetails.transaction.message.instructions[2].parsed.info.tokenAmount
+//           .amount
+//       ) / 1000000000;
+//     if (
+//       treasuryTkAccount == user.walletAddress &&
+//       process.env.TOKEN_MINT_ADDRESS == tokenMintAddress
+//     ) {
+//       try {
+//         const updateUser = await UserModel.findOneAndUpdate(
+//           { _id: _id },
+//           { tokenBalance: user.tokenBalance + Number(amount) },
+//           { new: true }
+//         );
+//         const newHistory = new HistoryModel({
+//           signature: signature,
+//           type: "burn",
+//           userId: _id,
+//           amount: amount,
+//         });
+//         await newHistory.save();
+//       } catch (error) {
+//         console.log("burn error => ", error);
+//         res.status(500).json({ err: error });
+//       }
+//     } else {
+//     }
+//     res.json({mission})
+//   } catch (error) {
+//     console.log('solo mission error', error);
+//     res.status(500).json({err: error})
+//   }
+// })
 //@route    GET history
 MissionRouter.get("/getHistory/:missionId", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

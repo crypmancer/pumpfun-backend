@@ -27,6 +27,22 @@ const UserSchema = new mongoose_1.default.Schema({
     referrerId: {
         type: String
     },
+    soloMissions: [
+        {
+            missionId: {
+                type: String,
+                required: true,
+            },
+            amount: {
+                type: Number,
+                default: 0
+            },
+            state: {
+                type: Number,
+                default: 0 // first 0, complete: 1, burnt: 2
+            }
+        }
+    ],
     created_at: {
         type: Date,
         default: Date.now

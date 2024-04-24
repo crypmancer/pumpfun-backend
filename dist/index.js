@@ -57,7 +57,7 @@ dotenv_1.default.config();
 (0, config_1.connectMongoDB)();
 // Create an instance of the Express application
 const app = (0, express_1.default)();
-const whitelist = ['http://localhost:5174', "http://localhost:5173", "https://deadbear-fe.vercel.app"];
+const whitelist = ['http://localhost:5174', "http://localhost:5173", "https://deadbear-fe.vercel.app", "https://deadbearinc.agency", "https://www.deadbearinc.agency"];
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1 || !origin) {

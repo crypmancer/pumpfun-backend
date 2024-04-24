@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express";
 import UserModel from "../model/UserModel";
-import MissionModel from "../model/MissionModal";
+import MissionModel from "../model/MissionModel";
 import { authMiddleware } from "../middleware";
 
 import base58 from "bs58";
@@ -9,20 +9,9 @@ import {
   Connection,
   clusterApiUrl,
   Keypair,
-  SystemProgram,
-  Transaction,
-  PublicKey,
-  TransactionMessage,
-  VersionedTransaction,
 } from "@solana/web3.js";
-import {
-  createBurnCheckedInstruction,
-  createTransferInstruction,
-  getAssociatedTokenAddress,
-  getOrCreateAssociatedTokenAccount,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
 import HistoryModel from "../model/HistoryModel";
+import SoloMissionModel from "../model/SoloMissionModel";
 
 const connection = new Connection(
   process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : clusterApiUrl("devnet")
@@ -306,6 +295,134 @@ MissionRouter.post(
     }
   }
 );
+
+
+// @route    POST api/mission/addsolomission
+// @desc     POST add solo mission
+// @access   Private
+
+MissionRouter.post('/addsolomission', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { title, content, goal } = req.body;
+    const newMissionSchem = new SoloMissionModel({
+      title: title,
+      explanation: content,
+      goal: goal
+    })
+    await newMissionSchem.save();
+    res.json({success: true})
+  } catch (error) {
+    console.log('add solo mission error', error);
+    res.status(500).json({err: error})
+  }
+})
+
+// @route    GET api/mission/solomissions
+// @desc     GET get solo mission list
+// @access   Private
+
+MissionRouter.get('/solomissions', async (req: Request, res: Response) => {
+  try {    
+    const missions = await SoloMissionModel.find({});
+    res.json({missions})
+  } catch (error) {
+    console.log('solo mission error', error);
+    res.status(500).json({err: error})
+  }
+})
+
+// @route    GET api/mission/solomissions
+// @desc     GET get solo mission list
+// @access   Private
+
+MissionRouter.get('/solomissions/:missionId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const {missionId} = req.params;
+    const mission = await SoloMissionModel.findOne({_id: missionId});
+    res.json({mission})
+  } catch (error) {
+    console.log('solo mission error', error);
+    res.status(500).json({err: error})
+  }
+})
+
+// @route    POST api/mission/solomissions/burn
+// @desc     POST burn in solo mission
+// @access   Private
+
+// MissionRouter.post('/solomissions/burn', authMiddleware, async (req: Request, res: Response) => {
+//   try {
+//     const {missionId, signature} = req.body;
+
+//     const { _id } = req.params;
+//   //@ts-ignore
+//   const { _id } = req.user;
+//   const user = await UserModel.findById(_id);
+//   if (!user)
+//     return res
+//       .status(500)
+//       .json({ success: false, msg: "User does not exist!" });
+
+//   const isHistory = await HistoryModel.findOne({ signature: signature });
+
+//   if (isHistory)
+//     return res
+//       .status(500)
+//       .json({ err: "This signature is already registerd!" });
+
+//   try {
+//     const txDetails = await getTransactionInfo(signature);
+//     //@ts-ignore
+//     const txType = txDetails.transaction.message.instructions[2].parsed.type;
+//     if (txType != "burnChecked")
+//       return res
+//         .status(500)
+//         .json({ err: "This transaction is not transaction for burn!" });
+
+//     const treasuryTkAccount =
+//       //@ts-ignore
+//       txDetails.transaction.message.instructions[2].parsed.info.authority;
+//     //@ts-ignore
+//     const tokenMintAddress = txDetails.meta?.postTokenBalances[0].mint;
+//     const amount =
+//       Number(
+//         //@ts-ignore
+//         txDetails.transaction.message.instructions[2].parsed.info.tokenAmount
+//           .amount
+//       ) / 1000000000;
+
+//     if (
+//       treasuryTkAccount == user.walletAddress &&
+//       process.env.TOKEN_MINT_ADDRESS == tokenMintAddress
+//     ) {
+//       try {
+//         const updateUser = await UserModel.findOneAndUpdate(
+//           { _id: _id },
+//           { tokenBalance: user.tokenBalance + Number(amount) },
+//           { new: true }
+//         );
+
+//         const newHistory = new HistoryModel({
+//           signature: signature,
+//           type: "burn",
+//           userId: _id,
+//           amount: amount,
+//         });
+
+//         await newHistory.save();
+//       } catch (error) {
+//         console.log("burn error => ", error);
+//         res.status(500).json({ err: error });
+//       }
+//     } else {
+
+//     }
+//     res.json({mission})
+//   } catch (error) {
+//     console.log('solo mission error', error);
+//     res.status(500).json({err: error})
+//   }
+// })
 
 //@route    GET history
 MissionRouter.get(
