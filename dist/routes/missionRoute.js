@@ -61,11 +61,11 @@ MissionRouter.get("/getOpened", (req, res) => __awaiter(void 0, void 0, void 0, 
         res.status(500).json({ success: false, msg: error });
     }
 }));
-MissionRouter.post("/addMission", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, content, goal } = req.body;
-        const { walletAddress } = req.user;
-        if (walletAddress != process.env.TREASURY_WALLET_ADDRESS)
+        const { role } = req.user;
+        if (role != 1)
             return res.status(500).json({ msg: "Server error!" });
         const newMissionSchem = new MissionModel_1.default({
             title: title,
