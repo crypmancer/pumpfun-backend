@@ -548,6 +548,17 @@ UserRouter.get('/notifi', middleware_1.authMiddleware, (req, res) => __awaiter(v
         res.status(500).json({ err: error });
     }
 }));
+UserRouter.get('/getAllnoti', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { _id } = req.user;
+        const notifis = yield NotificationModel_1.default.find({ userId: _id, notiType: "multimission" }).populate('missionId');
+        res.json({ notifis });
+    }
+    catch (error) {
+        console.log("getting notification error", error);
+        res.status(500).json({ err: error });
+    }
+}));
 UserRouter.get('/notifyread', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { _id } = req.user;

@@ -582,6 +582,17 @@ UserRouter.get('/notifi', authMiddleware, async (req: any, res) => {
   }
 })
 
+UserRouter.get('/getAllnoti', authMiddleware, async(req: any, res) => {
+  try {
+    const {_id} = req.user;
+    const notifis = await NotificationModel.find({userId: _id, notiType: "multimission"}).populate('missionId');
+    res.json({notifis})
+  } catch (error) {
+    console.log("getting notification error", error)
+    res.status(500).json({err: error})
+  }
+})
+
 UserRouter.get('/notifyread', authMiddleware, async (req: any, res) => {
   try {
     const {_id} = req.user;
@@ -592,5 +603,6 @@ UserRouter.get('/notifyread', authMiddleware, async (req: any, res) => {
     res.status(500).json({err: error});
   }
 })
+
 
 export default UserRouter;

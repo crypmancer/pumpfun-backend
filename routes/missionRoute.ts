@@ -133,7 +133,8 @@ MissionRouter.post(
         for (let i = 0; i < mission.users.length; i++) {
           const newSchem = new NotificationModel({
             userId: mission.users[i].userId,
-            missionId: missionId
+            missionId: missionId,
+            signature: signature
           });
           await newSchem.save();
         }

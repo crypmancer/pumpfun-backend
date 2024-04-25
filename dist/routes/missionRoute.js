@@ -113,7 +113,8 @@ MissionRouter.post("/missionComplete/:missionId", (req, res) => __awaiter(void 0
             for (let i = 0; i < mission.users.length; i++) {
                 const newSchem = new NotificationModel_1.default({
                     userId: mission.users[i].userId,
-                    missionId: missionId
+                    missionId: missionId,
+                    signature: signature
                 });
                 yield newSchem.save();
             }

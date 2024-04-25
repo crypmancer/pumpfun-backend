@@ -40,6 +40,9 @@ const NotificationSchem = new mongoose_1.default.Schema({
         type: mongoose_1.Types.ObjectId,
         ref: 'mission'
     },
+    signature: {
+        type: String,
+    },
     created_at: {
         type: Date,
         default: Date.now
