@@ -89,63 +89,25 @@ MissionRouter.post("/missionComplete/:missionId", (req, res) => __awaiter(void 0
         const mission = yield MissionModel_1.default.findById({ _id: missionId });
         if (!mission)
             return res.status(500).json({ err: "This mission does not exist!" });
-        // burn function
-        // console.log("token mint address", process.env.TOKEN_MINT_ADDRESS);
-        // console.log('treasury wallet ', wallet.publicKey);
-        // // Step 1 fetch associated token account address
-        // const account = await getAssociatedTokenAddress(
+        // try {
+        //   const txDetails = await getTransactionInfo(signature);
         //   //@ts-ignore
-        //   new PublicKey(process.env.TOKEN_MINT_ADDRESS),
-        //   wallet.publicKey
-        // );
-        // console.log(
-        //   `    ✅ - Associated Token Account Address: ${account.toString()}`
-        // );
-        // // Step 2 Create Burn Instruction
-        // console.log("Step 2 - Crate Burn Instructions");
-        // const burnIx = createBurnCheckedInstruction(
-        //   account,
-        //   //@ts-ignore
-        //   new PublicKey(process.env.TOKEN_MINT_ADDRESS),
-        //   wallet.publicKey,
-        //   amount * 10 ** 9,
-        //   9
-        // );
-        // console.log(`    ✅ - Burn Instruction Created`);
-        // // Step 3 - Fetch Blockhash
-        // console.log("Step 3 - Fetch Blockhash");
-        // const { blockhash, lastValidBlockHeight } =
-        //   await connection.getLatestBlockhash("finalized");
-        // console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
-        // // Step 4 - Assemble Transaction
-        // console.log("Step 4 - Assemble Transaction");
-        // const messageV0 = new TransactionMessage({
-        //   payerKey: wallet.publicKey,
-        //   recentBlockhash: blockhash,
-        //   instructions: [burnIx],
-        // }).compileToV0Message();
-        // const transaction = new VersionedTransaction(messageV0);
-        // transaction.sign([wallet]);
-        // console.log(`    ✅ - Transaction Created and Signed`);
-        // // Step 5 - Execute & confirm transaction
-        // console.log("Step 5 - execute & confirm transaction");
-        // const txId = await connection.sendTransaction(transaction);
-        // console.log("    ✅ - Transaction sent to network");
-        // console.log('txid => ', txId);
-        // const confirmation = await connection.confirmTransaction({
-        //   signature: txId,
-        //   blockhash: blockhash,
-        //   lastValidBlockHeight: lastValidBlockHeight,
-        // });
-        // if (confirmation.value.err) {
-        //   throw new Error("❌ - Transaction not confirmed.");
+        //   const txType = txDetails.transaction.message.instructions[2].parsed.type;
+        //   if (txType != "burnChecked")
+        //     return res
+        //       .status(500)
+        //       .json({ err: "This transaction is not transaction for burn!" });
+        //   const amount =
+        //     Number(
+        //       //@ts-ignore
+        //       txDetails.transaction.message.instructions[2].parsed.info
+        //         .tokenAmount.amount
+        //     ) / 1000000000 * 1.25;
+        //     console.log('mission amount', amount);
+        // } catch (error){
+        //   console.log('mission complete error', error)
+        //   res.status(500).json({err: error});
         // }
-        // console.log(
-        //   "🔥 SUCCESSFUL BURN!🔥",
-        //   "\n",
-        //   `https://explorer.solana.com/tx/${txId}`
-        // );
-        /////////////////
         const updatedMission = yield MissionModel_1.default.findOneAndUpdate({ _id: missionId }, { state: 2 }, { new: true });
         if (updatedMission) {
             for (let i = 0; i < mission.users.length; i++) {
@@ -155,6 +117,8 @@ MissionRouter.post("/missionComplete/:missionId", (req, res) => __awaiter(void 0
                 });
                 yield newSchem.save();
             }
+            const updatedHome = yield UserModel_1.default.findOneAndUpdate({ walletAddress: process.env.TREASURY_WALLET_ADDRESS }, { $inc: { tokenBalance: mission.goal * 0.8 } }, { new: true });
+            console.log('updated home', updatedHome);
             const history = new HistoryModel_1.default({
                 signature: signature,
                 type: 'missioncomplete',
@@ -162,7 +126,6 @@ MissionRouter.post("/missionComplete/:missionId", (req, res) => __awaiter(void 0
                 missionId: missionId
             });
             const historyrResult = yield history.save();
-            console.log('historyrResult', historyrResult);
             res.json({ success: true });
         }
     }
@@ -490,6 +453,10 @@ MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res)
                 .status(500)
                 .json({ success: false, msg: "User does not exist!" });
         const isHistory = yield HistoryModel_1.default.findOne({ signature: signature });
+        const mission = yield SoloMissionModel_1.default.findOne({ _id: missionId });
+        if (!mission)
+            return res.status(500).json({ err: "this mission does not exist!" });
+        const goal = mission === null || mission === void 0 ? void 0 : mission.goal;
         if (isHistory)
             return res
                 .status(500)
@@ -510,21 +477,29 @@ MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res)
             const amount = Number(
             //@ts-ignore
             txDetails.transaction.message.instructions[2].parsed.info
-                .tokenAmount.amount) / 1000000000;
+                .tokenAmount.amount) / 1000000000 * 1.25;
             if (treasuryTkAccount == user.walletAddress &&
                 process.env.TOKEN_MINT_ADDRESS == tokenMintAddress) {
                 try {
                     const userIndex = user.soloMissions.findIndex((mission) => {
                         return mission.missionId === missionId;
                     });
+                    let missionCompleted = false;
+                    console.log('burn amount => ', amount);
                     if (userIndex === -1) {
                         user.soloMissions.push({ missionId, amount });
                     }
                     else {
                         user.soloMissions[userIndex].amount += Number(amount);
+                        console.log('new mission amount => ', user.soloMissions[userIndex].amount);
+                        if (user.soloMissions[userIndex].amount >= goal) {
+                            user.soloMissions[userIndex].amount = 0;
+                            missionCompleted = true;
+                        }
                     }
                     const newUser = yield user.save();
-                    res.json({ newUser });
+                    console.log('mission goal => ', goal);
+                    console.log('new user => ', newUser);
                     const newHistory = new HistoryModel_1.default({
                         signature: signature,
                         type: "soloburn",
@@ -532,6 +507,8 @@ MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res)
                         amount: amount,
                     });
                     yield newHistory.save();
+                    yield UserModel_1.default.findOneAndUpdate({ walletAddress: process.env.TREASURY_WALLET_ADDRESS }, { $inc: { tokenBalance: amount * 0.8 } });
+                    res.json({ newUser, missionCompleted });
                 }
                 catch (error) {
                     console.log("solo burn error => ", error);
@@ -539,8 +516,8 @@ MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res)
                 }
             }
             else {
+                res.status(500).json({ err: "Invalid signature" });
             }
-            res.json({});
         }
         catch (error) {
             console.log("solo mission error", error);

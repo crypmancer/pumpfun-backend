@@ -285,7 +285,8 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
         tokenBalance: user?.tokenBalance,
         role: user?.role,
         created_at: user?.created_at,
-        email: user?.email
+        email: user?.email,
+        soloMissions: user?.soloMissions
       };
       const token = jwt.sign(payload ? payload : {}, JWT_SECRET, {
         expiresIn: "7 days",
@@ -303,7 +304,8 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
         tokenBalance: newUser?.tokenBalance,
         role: newUser?.role,
         created_at: newUser?.created_at,
-        email: newUser?.email
+        email: newUser?.email,
+        soloMissions: newUser?.soloMissions
       };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });
       res.json({ success: true, token });
@@ -361,7 +363,8 @@ UserRouter.post(
           role: updatedUser?.role,
           username: updatedUser.username,
           created_at: updatedUser?.created_at,
-          email: updatedUser?.email
+          email: updatedUser?.email,
+          soloMissions: updatedUser?.soloMissions
         };
         const token = jwt.sign(payload ? payload : {}, JWT_SECRET, {
           expiresIn: "7 days",
@@ -462,7 +465,8 @@ UserRouter.post("/burn", authMiddleware, async (req, res) => {
           tokenBalance: updateUser?.tokenBalance,
           role: updateUser?.role,
           created_at: updateUser?.created_at,
-          email: updateUser?.email
+          email: updateUser?.email,
+          soloMissions: updateUser?.soloMissions
         };
 
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });
@@ -547,7 +551,8 @@ UserRouter.post("/admin-burn", authMiddleware, async (req: any, res) => {
             tokenBalance: updateUser?.tokenBalance,
             role: updateUser?.role,
             created_at: updateUser?.created_at,
-            email: updateUser?.email
+            email: updateUser?.email,
+            soloMissions: updateUser?.soloMissions
           };
   
           const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });

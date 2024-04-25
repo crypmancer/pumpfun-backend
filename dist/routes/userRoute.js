@@ -288,7 +288,8 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
                 tokenBalance: user === null || user === void 0 ? void 0 : user.tokenBalance,
                 role: user === null || user === void 0 ? void 0 : user.role,
                 created_at: user === null || user === void 0 ? void 0 : user.created_at,
-                email: user === null || user === void 0 ? void 0 : user.email
+                email: user === null || user === void 0 ? void 0 : user.email,
+                soloMissions: user === null || user === void 0 ? void 0 : user.soloMissions
             };
             const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
                 expiresIn: "7 days",
@@ -307,7 +308,8 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
                 tokenBalance: newUser === null || newUser === void 0 ? void 0 : newUser.tokenBalance,
                 role: newUser === null || newUser === void 0 ? void 0 : newUser.role,
                 created_at: newUser === null || newUser === void 0 ? void 0 : newUser.created_at,
-                email: newUser === null || newUser === void 0 ? void 0 : newUser.email
+                email: newUser === null || newUser === void 0 ? void 0 : newUser.email,
+                soloMissions: newUser === null || newUser === void 0 ? void 0 : newUser.soloMissions
             };
             const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
             res.json({ success: true, token });
@@ -355,7 +357,8 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
                 role: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.role,
                 username: updatedUser.username,
                 created_at: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.created_at,
-                email: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.email
+                email: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.email,
+                soloMissions: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.soloMissions
             };
             const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
                 expiresIn: "7 days",
@@ -436,7 +439,8 @@ UserRouter.post("/burn", middleware_1.authMiddleware, (req, res) => __awaiter(vo
                     tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
                     role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
                     created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
-                    email: updateUser === null || updateUser === void 0 ? void 0 : updateUser.email
+                    email: updateUser === null || updateUser === void 0 ? void 0 : updateUser.email,
+                    soloMissions: updateUser === null || updateUser === void 0 ? void 0 : updateUser.soloMissions
                 };
                 const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
                 res.json({ success: true, token: token, txDetails });
@@ -512,7 +516,8 @@ UserRouter.post("/admin-burn", middleware_1.authMiddleware, (req, res) => __awai
                         tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
                         role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
                         created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
-                        email: updateUser === null || updateUser === void 0 ? void 0 : updateUser.email
+                        email: updateUser === null || updateUser === void 0 ? void 0 : updateUser.email,
+                        soloMissions: updateUser === null || updateUser === void 0 ? void 0 : updateUser.soloMissions
                     };
                     const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
                     res.json({ success: true, token: token });
