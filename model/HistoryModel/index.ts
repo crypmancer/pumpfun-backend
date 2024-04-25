@@ -11,12 +11,12 @@ const HistorySchema = new mongoose.Schema({
     unique: true
   },
   userId: {
-    type: Types.ObjectId,
+    type: String,
     required: true
   },
   amount: {
     type: Number,
-    required: true
+    // required: true
   },
   missionId: {
     type: String

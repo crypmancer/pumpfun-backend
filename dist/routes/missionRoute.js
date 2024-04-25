@@ -20,6 +20,7 @@ const bs58_1 = __importDefault(require("bs58"));
 const web3_js_1 = require("@solana/web3.js");
 const HistoryModel_1 = __importDefault(require("../model/HistoryModel"));
 const SoloMissionModel_1 = __importDefault(require("../model/SoloMissionModel"));
+const NotificationModel_1 = __importDefault(require("../model/NotificationModel"));
 const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
 const wallet = web3_js_1.Keypair.fromSecretKey(
 //@ts-ignore
@@ -60,7 +61,7 @@ MissionRouter.get("/getOpened", (req, res) => __awaiter(void 0, void 0, void 0, 
         res.status(500).json({ success: false, msg: error });
     }
 }));
-MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.post("/addMission", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, content, goal } = req.body;
         const { walletAddress } = req.user;
@@ -79,10 +80,139 @@ MissionRouter.post("/addMission", middleware_1.authMiddleware, (req, res) => __a
         res.status(500).json({ err: error });
     }
 }));
+MissionRouter.post("/missionComplete/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { missionId } = req.params;
+        const { signature } = req.body;
+        console.log("signiation valid => ", signature);
+        console.log("signiation valid => ", missionId);
+        const mission = yield MissionModel_1.default.findById({ _id: missionId });
+        if (!mission)
+            return res.status(500).json({ err: "This mission does not exist!" });
+        // burn function
+        // console.log("token mint address", process.env.TOKEN_MINT_ADDRESS);
+        // console.log('treasury wallet ', wallet.publicKey);
+        // // Step 1 fetch associated token account address
+        // const account = await getAssociatedTokenAddress(
+        //   //@ts-ignore
+        //   new PublicKey(process.env.TOKEN_MINT_ADDRESS),
+        //   wallet.publicKey
+        // );
+        // console.log(
+        //   `    ✅ - Associated Token Account Address: ${account.toString()}`
+        // );
+        // // Step 2 Create Burn Instruction
+        // console.log("Step 2 - Crate Burn Instructions");
+        // const burnIx = createBurnCheckedInstruction(
+        //   account,
+        //   //@ts-ignore
+        //   new PublicKey(process.env.TOKEN_MINT_ADDRESS),
+        //   wallet.publicKey,
+        //   amount * 10 ** 9,
+        //   9
+        // );
+        // console.log(`    ✅ - Burn Instruction Created`);
+        // // Step 3 - Fetch Blockhash
+        // console.log("Step 3 - Fetch Blockhash");
+        // const { blockhash, lastValidBlockHeight } =
+        //   await connection.getLatestBlockhash("finalized");
+        // console.log(`    ✅ - Latest Blockhash: ${blockhash}`);
+        // // Step 4 - Assemble Transaction
+        // console.log("Step 4 - Assemble Transaction");
+        // const messageV0 = new TransactionMessage({
+        //   payerKey: wallet.publicKey,
+        //   recentBlockhash: blockhash,
+        //   instructions: [burnIx],
+        // }).compileToV0Message();
+        // const transaction = new VersionedTransaction(messageV0);
+        // transaction.sign([wallet]);
+        // console.log(`    ✅ - Transaction Created and Signed`);
+        // // Step 5 - Execute & confirm transaction
+        // console.log("Step 5 - execute & confirm transaction");
+        // const txId = await connection.sendTransaction(transaction);
+        // console.log("    ✅ - Transaction sent to network");
+        // console.log('txid => ', txId);
+        // const confirmation = await connection.confirmTransaction({
+        //   signature: txId,
+        //   blockhash: blockhash,
+        //   lastValidBlockHeight: lastValidBlockHeight,
+        // });
+        // if (confirmation.value.err) {
+        //   throw new Error("❌ - Transaction not confirmed.");
+        // }
+        // console.log(
+        //   "🔥 SUCCESSFUL BURN!🔥",
+        //   "\n",
+        //   `https://explorer.solana.com/tx/${txId}`
+        // );
+        /////////////////
+        const updatedMission = yield MissionModel_1.default.findOneAndUpdate({ _id: missionId }, { state: 2 }, { new: true });
+        if (updatedMission) {
+            for (let i = 0; i < mission.users.length; i++) {
+                const newSchem = new NotificationModel_1.default({
+                    userId: mission.users[i].userId,
+                    missionId: missionId
+                });
+                yield newSchem.save();
+            }
+            const history = new HistoryModel_1.default({
+                signature: signature,
+                type: 'missioncomplete',
+                userId: 'admin',
+                missionId: missionId
+            });
+            const historyrResult = yield history.save();
+            console.log('historyrResult', historyrResult);
+            res.json({ success: true });
+        }
+    }
+    catch (error) {
+        console.log("multi mission complete error", error);
+        res.status(500).json({ err: error });
+    }
+}));
+MissionRouter.delete("/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { missionId } = req.params;
+        const mission = yield MissionModel_1.default.findById({ _id: missionId });
+        if (!mission)
+            return res.status(500).json({ err: "This mission does not exist!" });
+        yield MissionModel_1.default.findOneAndDelete({ _id: missionId });
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.log("delete multi mission error", error);
+        res.status(500).json({ err: error });
+    }
+}));
+// @route    update api/missions/update/:missionId
+// @desc     Get one mission
+// @access   Private
+MissionRouter.post("/update/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { missionId } = req.params;
+        const { title, content, goal } = req.body;
+        const mission = yield MissionModel_1.default.findById(missionId);
+        if (!mission)
+            return res.status(500).json({ err: "This mission does not exist!" });
+        const updatedMission = yield MissionModel_1.default.findByIdAndUpdate({ _id: missionId }, {
+            title: title,
+            explanation: content,
+            goal: goal,
+        });
+        if (updatedMission) {
+            res.json({ success: true });
+        }
+    }
+    catch (error) {
+        console.log("get one mission error ==> ", error);
+        res.status(500).json({ err: error });
+    }
+}));
 // @route    GET api/mission/getOne/:missionId
 // @desc     Get one mission
 // @access   Private
-MissionRouter.get("/getOne/:missionId", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.get("/getOne/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { missionId } = req.params;
         const mission = yield MissionModel_1.default.findById(missionId);
@@ -151,8 +281,7 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
                 process.env.TOKEN_MINT_ADDRESS == tokenMintAddress) {
                 const amount = Number(
                 //@ts-ignore
-                txDetails.transaction.message.instructions[2].parsed.info
-                    .amount) / 1000000000;
+                txDetails.transaction.message.instructions[2].parsed.info.amount) / 1000000000;
                 const userIndex = mission.users.findIndex((user) => {
                     return user.userId.toString() === _id;
                 });
@@ -243,7 +372,9 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
                 }
             }
             else {
-                res.status(500).json({ treasuryTkAccount, destination, tokenMintAddress });
+                res
+                    .status(500)
+                    .json({ treasuryTkAccount, destination, tokenMintAddress });
             }
         }
         catch (error) {
@@ -259,116 +390,167 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
 // @route    POST api/mission/addsolomission
 // @desc     POST add solo mission
 // @access   Private
-MissionRouter.post('/addsolomission', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.post("/addsolomission", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { title, content, goal } = req.body;
         const newMissionSchem = new SoloMissionModel_1.default({
             title: title,
             explanation: content,
-            goal: goal
+            goal: goal,
         });
         yield newMissionSchem.save();
         res.json({ success: true });
     }
     catch (error) {
-        console.log('add solo mission error', error);
+        console.log("add solo mission error", error);
         res.status(500).json({ err: error });
     }
 }));
-// @route    GET api/mission/solomissions
+// @route    GET api/missions/solomissions/update
 // @desc     GET get solo mission list
 // @access   Private
-MissionRouter.get('/solomissions', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.post("/solomissions/update", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const missions = yield SoloMissionModel_1.default.find({});
-        res.json({ missions });
+        const { missionId, title, content, goal } = req.body;
+        console.log("updating data => ", req.body);
+        const mission = yield SoloMissionModel_1.default.findOne({ _id: missionId });
+        if (!mission)
+            return res.status(500).json({ err: "This mission does not exist!" });
+        const updatedMission = yield SoloMissionModel_1.default.findOneAndUpdate({ _id: missionId }, {
+            title: title,
+            explanation: content,
+            goal: goal,
+        }, { new: true });
+        console.log("updated mission => ", updatedMission);
+        if (updatedMission) {
+            res.json({ success: true });
+        }
     }
     catch (error) {
-        console.log('solo mission error', error);
+        console.log("solo mission error", error);
+        res.status(500).json({ err: error });
+    }
+}));
+// @route    DELETE api/missions/solomissions/:missionId
+// @desc     DELETE delete one mission
+// @access   Private
+MissionRouter.delete("/solomissions/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { missionId } = req.params;
+        const mission = yield SoloMissionModel_1.default.findOne({ _id: missionId });
+        if (!mission)
+            return res.status(500).json({ err: "This mission does not exist!" });
+        yield SoloMissionModel_1.default.findOneAndDelete({ _id: missionId });
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.log("solo mission error", error);
         res.status(500).json({ err: error });
     }
 }));
 // @route    GET api/mission/solomissions
 // @desc     GET get solo mission list
 // @access   Private
-MissionRouter.get('/solomissions/:missionId', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+MissionRouter.get("/solomissions/:missionId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { missionId } = req.params;
         const mission = yield SoloMissionModel_1.default.findOne({ _id: missionId });
         res.json({ mission });
     }
     catch (error) {
-        console.log('solo mission error', error);
+        console.log("solo mission error", error);
+        res.status(500).json({ err: error });
+    }
+}));
+MissionRouter.get("/solomissions", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const missions = yield SoloMissionModel_1.default.find({});
+        res.json({ missions });
+    }
+    catch (error) {
+        console.log("solo missions error", error);
         res.status(500).json({ err: error });
     }
 }));
 // @route    POST api/mission/solomissions/burn
 // @desc     POST burn in solo mission
 // @access   Private
-// MissionRouter.post('/solomissions/burn', authMiddleware, async (req: Request, res: Response) => {
-//   try {
-//     const {missionId, signature} = req.body;
-//     const { _id } = req.params;
-//   //@ts-ignore
-//   const { _id } = req.user;
-//   const user = await UserModel.findById(_id);
-//   if (!user)
-//     return res
-//       .status(500)
-//       .json({ success: false, msg: "User does not exist!" });
-//   const isHistory = await HistoryModel.findOne({ signature: signature });
-//   if (isHistory)
-//     return res
-//       .status(500)
-//       .json({ err: "This signature is already registerd!" });
-//   try {
-//     const txDetails = await getTransactionInfo(signature);
-//     //@ts-ignore
-//     const txType = txDetails.transaction.message.instructions[2].parsed.type;
-//     if (txType != "burnChecked")
-//       return res
-//         .status(500)
-//         .json({ err: "This transaction is not transaction for burn!" });
-//     const treasuryTkAccount =
-//       //@ts-ignore
-//       txDetails.transaction.message.instructions[2].parsed.info.authority;
-//     //@ts-ignore
-//     const tokenMintAddress = txDetails.meta?.postTokenBalances[0].mint;
-//     const amount =
-//       Number(
-//         //@ts-ignore
-//         txDetails.transaction.message.instructions[2].parsed.info.tokenAmount
-//           .amount
-//       ) / 1000000000;
-//     if (
-//       treasuryTkAccount == user.walletAddress &&
-//       process.env.TOKEN_MINT_ADDRESS == tokenMintAddress
-//     ) {
-//       try {
-//         const updateUser = await UserModel.findOneAndUpdate(
-//           { _id: _id },
-//           { tokenBalance: user.tokenBalance + Number(amount) },
-//           { new: true }
-//         );
-//         const newHistory = new HistoryModel({
-//           signature: signature,
-//           type: "burn",
-//           userId: _id,
-//           amount: amount,
-//         });
-//         await newHistory.save();
-//       } catch (error) {
-//         console.log("burn error => ", error);
-//         res.status(500).json({ err: error });
-//       }
-//     } else {
-//     }
-//     res.json({mission})
-//   } catch (error) {
-//     console.log('solo mission error', error);
-//     res.status(500).json({err: error})
-//   }
-// })
+MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    try {
+        const { missionId, signature } = req.body;
+        //@ts-ignore
+        const { _id } = req.user;
+        console.log("missionid => ", missionId);
+        console.log("signature => ", signature);
+        console.log("_id => ", _id);
+        const user = yield UserModel_1.default.findById(_id);
+        if (!user)
+            return res
+                .status(500)
+                .json({ success: false, msg: "User does not exist!" });
+        const isHistory = yield HistoryModel_1.default.findOne({ signature: signature });
+        if (isHistory)
+            return res
+                .status(500)
+                .json({ err: "This signature is already registerd!" });
+        try {
+            const txDetails = yield getTransactionInfo(signature);
+            //@ts-ignore
+            const txType = txDetails.transaction.message.instructions[2].parsed.type;
+            if (txType != "burnChecked")
+                return res
+                    .status(500)
+                    .json({ err: "This transaction is not transaction for burn!" });
+            const treasuryTkAccount = 
+            //@ts-ignore
+            txDetails.transaction.message.instructions[2].parsed.info.authority;
+            //@ts-ignore
+            const tokenMintAddress = (_b = txDetails.meta) === null || _b === void 0 ? void 0 : _b.postTokenBalances[0].mint;
+            const amount = Number(
+            //@ts-ignore
+            txDetails.transaction.message.instructions[2].parsed.info
+                .tokenAmount.amount) / 1000000000;
+            if (treasuryTkAccount == user.walletAddress &&
+                process.env.TOKEN_MINT_ADDRESS == tokenMintAddress) {
+                try {
+                    const userIndex = user.soloMissions.findIndex((mission) => {
+                        return mission.missionId === missionId;
+                    });
+                    if (userIndex === -1) {
+                        user.soloMissions.push({ missionId, amount });
+                    }
+                    else {
+                        user.soloMissions[userIndex].amount += Number(amount);
+                    }
+                    const newUser = yield user.save();
+                    res.json({ newUser });
+                    const newHistory = new HistoryModel_1.default({
+                        signature: signature,
+                        type: "soloburn",
+                        userId: _id,
+                        amount: amount,
+                    });
+                    yield newHistory.save();
+                }
+                catch (error) {
+                    console.log("solo burn error => ", error);
+                    res.status(500).json({ err: error });
+                }
+            }
+            else {
+            }
+            res.json({});
+        }
+        catch (error) {
+            console.log("solo mission error", error);
+            res.status(500).json({ err: error });
+        }
+    }
+    catch (error) {
+        console.log("error", error);
+    }
+}));
 //@route    GET history
 MissionRouter.get("/getHistory/:missionId", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {

@@ -24,41 +24,26 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const MissionSchema = new mongoose_1.default.Schema({
-    title: {
+const NotificationSchem = new mongoose_1.default.Schema({
+    notiType: {
         type: String,
-        required: true
+        default: "multimission"
     },
-    explanation: {
+    userId: {
         type: String,
-        required: true
     },
-    goal: {
-        type: Number,
-        default: 100
+    status: {
+        type: Boolean,
+        default: false
     },
-    users: [{
-            userId: {
-                type: mongoose_1.Types.ObjectId,
-                ref: 'user'
-            },
-            amount: {
-                type: Number,
-                required: true
-            },
-            created_at: {
-                type: Date,
-                default: Date.now
-            }
-        }],
-    state: {
-        type: Number,
-        default: 0
+    missionId: {
+        type: mongoose_1.Types.ObjectId,
+        ref: 'mission'
     },
     created_at: {
         type: Date,
         default: Date.now
     }
 });
-const MissionModel = mongoose_1.default.model("mission", MissionSchema);
-exports.default = MissionModel;
+const NotificationModel = mongoose_1.default.model("notification", NotificationSchem);
+exports.default = NotificationModel;

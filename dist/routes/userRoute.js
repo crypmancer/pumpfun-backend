@@ -246,6 +246,7 @@ const middleware_1 = require("../middleware");
 const config_1 = require("../config");
 const web3_js_1 = require("@solana/web3.js");
 const UserModel_2 = __importDefault(require("../model/UserModel"));
+const NotificationModel_1 = __importDefault(require("../model/NotificationModel"));
 const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
 const wallet = web3_js_1.Keypair.fromSecretKey(
 //@ts-ignore
@@ -287,6 +288,7 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
                 tokenBalance: user === null || user === void 0 ? void 0 : user.tokenBalance,
                 role: user === null || user === void 0 ? void 0 : user.role,
                 created_at: user === null || user === void 0 ? void 0 : user.created_at,
+                email: user === null || user === void 0 ? void 0 : user.email
             };
             const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
                 expiresIn: "7 days",
@@ -305,6 +307,7 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
                 tokenBalance: newUser === null || newUser === void 0 ? void 0 : newUser.tokenBalance,
                 role: newUser === null || newUser === void 0 ? void 0 : newUser.role,
                 created_at: newUser === null || newUser === void 0 ? void 0 : newUser.created_at,
+                email: newUser === null || newUser === void 0 ? void 0 : newUser.email
             };
             const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
             res.json({ success: true, token });
@@ -319,7 +322,8 @@ UserRouter.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, fun
 // @route    Update user
 // @route    Private
 UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username } = req.body;
+    const { username, email } = req.body;
+    const { _id } = req.user;
     try {
         //@ts-ignore
         const isUser = yield validateWallet(req.user.walletAddress);
@@ -328,15 +332,21 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
                 .status(500)
                 .json({ success: false, msg: "This wallet does not exist" });
         const sameNameUser = yield UserModel_2.default.findOne({ username: username });
-        console.log("samenameuser", sameNameUser);
-        if (sameNameUser)
+        const sameEmail = yield UserModel_2.default.findOne({ email: email });
+        if (sameNameUser && sameNameUser._id.toString() !== _id)
             return res
                 .status(500)
                 .json({
                 msg: "This name is already exist! Please try with other name!",
             });
+        if (sameEmail && sameEmail._id.toString() !== _id)
+            return res
+                .status(500)
+                .json({
+                msg: "This email is already exist! Please try with other name!",
+            });
         //@ts-ignore
-        const updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: req.user.walletAddress }, { username: username }, { new: true });
+        const updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: req.user.walletAddress }, { username: username, email: email }, { new: true });
         if (updatedUser) {
             const payload = {
                 _id: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser._id,
@@ -345,6 +355,7 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
                 role: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.role,
                 username: updatedUser.username,
                 created_at: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.created_at,
+                email: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.email
             };
             const token = jsonwebtoken_1.default.sign(payload ? payload : {}, config_1.JWT_SECRET, {
                 expiresIn: "7 days",
@@ -360,8 +371,9 @@ UserRouter.post("/update", middleware_1.authMiddleware, (req, res) => __awaiter(
 UserRouter.post("/checkName", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { username } = req.body;
+        const { _id } = req.user;
         const isUser = yield UserModel_2.default.findOne({ username });
-        if (isUser) {
+        if (isUser && isUser._id.toString() !== _id) {
             res.json({ isUser: true });
         }
         else {
@@ -424,6 +436,7 @@ UserRouter.post("/burn", middleware_1.authMiddleware, (req, res) => __awaiter(vo
                     tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
                     role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
                     created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
+                    email: updateUser === null || updateUser === void 0 ? void 0 : updateUser.email
                 };
                 const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
                 res.json({ success: true, token: token, txDetails });
@@ -499,6 +512,7 @@ UserRouter.post("/admin-burn", middleware_1.authMiddleware, (req, res) => __awai
                         tokenBalance: updateUser === null || updateUser === void 0 ? void 0 : updateUser.tokenBalance,
                         role: updateUser === null || updateUser === void 0 ? void 0 : updateUser.role,
                         created_at: updateUser === null || updateUser === void 0 ? void 0 : updateUser.created_at,
+                        email: updateUser === null || updateUser === void 0 ? void 0 : updateUser.email
                     };
                     const token = jsonwebtoken_1.default.sign(payload, config_1.JWT_SECRET, { expiresIn: "7 days" });
                     res.json({ success: true, token: token });
@@ -516,6 +530,28 @@ UserRouter.post("/admin-burn", middleware_1.authMiddleware, (req, res) => __awai
     catch (error) {
         console.log("admin burn error", error);
         res.status(500).json({ msg: error });
+    }
+}));
+UserRouter.get('/notifi', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { _id } = req.user;
+        const notifis = yield NotificationModel_1.default.find({ userId: _id, status: false }).populate('missionId');
+        res.json({ notifis });
+    }
+    catch (error) {
+        console.log("getting notification error", error);
+        res.status(500).json({ err: error });
+    }
+}));
+UserRouter.get('/notifyread', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { _id } = req.user;
+        yield NotificationModel_1.default.updateMany({ userId: _id, status: false }, { status: true });
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.log("mark as read notification error => ", error);
+        res.status(500).json({ err: error });
     }
 }));
 exports.default = UserRouter;

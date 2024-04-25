@@ -237,6 +237,7 @@ import { JWT_SECRET } from "../config";
 
 import { Connection, clusterApiUrl, Keypair } from "@solana/web3.js";
 import UserModel from "../model/UserModel";
+import NotificationModel from "../model/NotificationModel";
 
 const connection = new Connection(
   process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : clusterApiUrl("devnet")
@@ -284,6 +285,7 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
         tokenBalance: user?.tokenBalance,
         role: user?.role,
         created_at: user?.created_at,
+        email: user?.email
       };
       const token = jwt.sign(payload ? payload : {}, JWT_SECRET, {
         expiresIn: "7 days",
@@ -301,6 +303,7 @@ UserRouter.post("/register", async (req: Request, res: Response) => {
         tokenBalance: newUser?.tokenBalance,
         role: newUser?.role,
         created_at: newUser?.created_at,
+        email: newUser?.email
       };
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });
       res.json({ success: true, token });
@@ -318,7 +321,8 @@ UserRouter.post(
   "/update",
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
-    const { username } = req.body;
+    const { username, email } = req.body;
+    const {_id} = req.user
     try {
       //@ts-ignore
       const isUser = await validateWallet(req.user.walletAddress);
@@ -327,17 +331,25 @@ UserRouter.post(
           .status(500)
           .json({ success: false, msg: "This wallet does not exist" });
       const sameNameUser = await UserModel.findOne({ username: username });
-      console.log("samenameuser", sameNameUser);
-      if (sameNameUser)
+      const sameEmail = await UserModel.findOne({email: email});
+
+      if (sameNameUser && sameNameUser._id.toString() !== _id)
         return res
           .status(500)
           .json({
             msg: "This name is already exist! Please try with other name!",
           });
+      if (sameEmail && sameEmail._id.toString() !== _id)
+        return res
+          .status(500)
+          .json({
+            msg: "This email is already exist! Please try with other name!",
+          });
+            
       //@ts-ignore
       const updatedUser = await User.findOneAndUpdate(
         { walletAddress: req.user.walletAddress },
-        { username: username },
+        { username: username, email: email },
         { new: true }
       );
 
@@ -349,6 +361,7 @@ UserRouter.post(
           role: updatedUser?.role,
           username: updatedUser.username,
           created_at: updatedUser?.created_at,
+          email: updatedUser?.email
         };
         const token = jwt.sign(payload ? payload : {}, JWT_SECRET, {
           expiresIn: "7 days",
@@ -365,11 +378,13 @@ UserRouter.post(
 UserRouter.post(
   "/checkName",
   authMiddleware,
-  async (req: Request, res: Response) => {
+  async (req: any, res: Response) => {
     try {
       const { username } = req.body;
+      const {_id} = req.user;
       const isUser = await UserModel.findOne({ username });
-      if (isUser) {
+
+      if (isUser && isUser._id.toString() !== _id) {
         res.json({ isUser: true });
       } else {
         res.json({ isUser: false });
@@ -447,6 +462,7 @@ UserRouter.post("/burn", authMiddleware, async (req, res) => {
           tokenBalance: updateUser?.tokenBalance,
           role: updateUser?.role,
           created_at: updateUser?.created_at,
+          email: updateUser?.email
         };
 
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });
@@ -531,6 +547,7 @@ UserRouter.post("/admin-burn", authMiddleware, async (req: any, res) => {
             tokenBalance: updateUser?.tokenBalance,
             role: updateUser?.role,
             created_at: updateUser?.created_at,
+            email: updateUser?.email
           };
   
           const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7 days" });
@@ -548,5 +565,27 @@ UserRouter.post("/admin-burn", authMiddleware, async (req: any, res) => {
     res.status(500).json({ msg: error });
   }
 });
+
+UserRouter.get('/notifi', authMiddleware, async (req: any, res) => {
+  try {
+    const {_id} = req.user;
+    const notifis = await NotificationModel.find({userId: _id, status: false}).populate('missionId');
+    res.json({notifis})
+  } catch (error) {
+    console.log("getting notification error", error)
+    res.status(500).json({err: error})
+  }
+})
+
+UserRouter.get('/notifyread', authMiddleware, async (req: any, res) => {
+  try {
+    const {_id} = req.user;
+    await NotificationModel.updateMany({userId: _id, status: false}, {status: true})
+    res.json({success: true})
+  } catch (error) {
+    console.log("mark as read notification error => ", error);
+    res.status(500).json({err: error});
+  }
+})
 
 export default UserRouter;

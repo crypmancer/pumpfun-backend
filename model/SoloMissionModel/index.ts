@@ -16,6 +16,10 @@ const SoloMissionSchema = new mongoose.Schema({
   state: {
     type: Number,
     default: 0
+  },
+  created_at: {
+    type: Date,
+    default: Date.now
   }
 });
 

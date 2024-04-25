@@ -20,6 +20,10 @@ const SoloMissionSchema = new mongoose_1.default.Schema({
     state: {
         type: Number,
         default: 0
+    },
+    created_at: {
+        type: Date,
+        default: Date.now
     }
 });
 const SoloMissionModel = mongoose_1.default.model("solomission", SoloMissionSchema);

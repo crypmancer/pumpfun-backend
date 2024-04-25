@@ -27,6 +27,10 @@ const UserSchema = new mongoose_1.default.Schema({
     referrerId: {
         type: String
     },
+    email: {
+        type: String,
+        default: ''
+    },
     soloMissions: [
         {
             missionId: {
