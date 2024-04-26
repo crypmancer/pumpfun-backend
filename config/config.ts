@@ -9,6 +9,6 @@ try {
 }
 
 // export const MONGO_URL = `mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
-export const MONGO_URL = 'mongodb://mongo:jYTkfvpPKxbGydZZiXBfFkUdypkNKQDm@monorail.proxy.rlwy.net:41057';
+export const MONGO_URL = 'mongodb://mongo:KYtxYUlPJHLumZZERQRUMviexKSMsmlC@roundhouse.proxy.rlwy.net:21011';
 export const PORT = process.env.PORT || 9000
 export const JWT_SECRET = process.env.JWT_SECRET || "JWT_SECRET";
