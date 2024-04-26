@@ -20,10 +20,12 @@ LeaderBoardRouter.get("/getRank", async (req: Request, res: Response) => {
       if (rankUsers[i].walletAddress === process.env.TREASURY_WALLET_ADDRESS) {
         continue;
       } else {
-        userlist.push({
-          username: rankUsers[i].username,
-          amount: rankUsers[i].tokenBalance,
-        });
+        if (rankUsers[i].tokenBalance != 0) {
+            userlist.push({
+              username: rankUsers[i].username,
+              amount: rankUsers[i].tokenBalance,
+            });
+        }
       }
     }
     res.json({ rankUsers: userlist });

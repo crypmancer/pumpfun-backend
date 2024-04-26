@@ -25,10 +25,12 @@ LeaderBoardRouter.get("/getRank", (req, res) => __awaiter(void 0, void 0, void 0
                 continue;
             }
             else {
-                userlist.push({
-                    username: rankUsers[i].username,
-                    amount: rankUsers[i].tokenBalance,
-                });
+                if (rankUsers[i].tokenBalance != 0) {
+                    userlist.push({
+                        username: rankUsers[i].username,
+                        amount: rankUsers[i].tokenBalance,
+                    });
+                }
             }
         }
         res.json({ rankUsers: userlist });
