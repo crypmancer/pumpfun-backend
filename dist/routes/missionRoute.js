@@ -506,6 +506,7 @@ MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res)
                         type: "soloburn",
                         userId: _id,
                         amount: amount,
+                        missionId: missionId
                     });
                     yield newHistory.save();
                     yield UserModel_1.default.findOneAndUpdate({ walletAddress: process.env.TREASURY_WALLET_ADDRESS }, { $inc: { tokenBalance: amount * 0.8 } });

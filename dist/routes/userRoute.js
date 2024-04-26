@@ -570,4 +570,15 @@ UserRouter.get('/notifyread', middleware_1.authMiddleware, (req, res) => __await
         res.status(500).json({ err: error });
     }
 }));
+UserRouter.get('/getAllHis', middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const allHistories = yield HistoryModel_1.default.find().populate('userId');
+        console.log('all histories =>', allHistories);
+        res.json({ allHistories });
+    }
+    catch (error) {
+        console.log('getting all histories error => ', error);
+        res.status(500).json({ err: error });
+    }
+}));
 exports.default = UserRouter;

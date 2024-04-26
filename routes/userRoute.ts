@@ -604,5 +604,16 @@ UserRouter.get('/notifyread', authMiddleware, async (req: any, res) => {
   }
 })
 
+UserRouter.get('/getAllHis', authMiddleware, async (req: any, res) => {
+  try {
+    const allHistories = await HistoryModel.find().populate('userId');
+    console.log('all histories =>', allHistories)
+    res.json({allHistories});
+  } catch (error) {
+    console.log('getting all histories error => ', error);
+    res.status(500).json({err: error})
+  }
+})
+
 
 export default UserRouter;

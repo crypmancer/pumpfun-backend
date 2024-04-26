@@ -11,8 +11,9 @@ const HistorySchema = new mongoose.Schema({
     unique: true
   },
   userId: {
-    type: String,
-    required: true
+    type: Types.ObjectId,
+    required: true,
+    ref: 'user'
   },
   amount: {
     type: Number,

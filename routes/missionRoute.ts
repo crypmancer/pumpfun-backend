@@ -610,6 +610,7 @@ MissionRouter.post(
               type: "soloburn",
               userId: _id,
               amount: amount,
+              missionId: missionId
             });
 
             await newHistory.save();
