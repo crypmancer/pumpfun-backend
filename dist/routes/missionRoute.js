@@ -264,8 +264,7 @@ MissionRouter.post("/joinUser", middleware_1.authMiddleware, (req, res) => __awa
                     missionId: missionId,
                 });
                 yield newHistory.save();
-                const currentBalance = user === null || user === void 0 ? void 0 : user.tokenBalance;
-                yield UserModel_1.default.updateOne({ _id: _id }, { tokenBalance: currentBalance ? currentBalance : 0 + amount }, { new: true });
+                yield UserModel_1.default.updateOne({ _id: _id }, { $inc: { tokenBalance: Number(amount) } }, { new: true });
                 const totalAmount = newMission.users.reduce((sum, user) => sum + user.amount, 0);
                 if (newMission.goal <= totalAmount) {
                     yield MissionModel_1.default.findOneAndUpdate({ _id: missionId }, { state: 1 });
@@ -509,6 +508,7 @@ MissionRouter.post("/solomissions/burn", middleware_1.authMiddleware, (req, res)
                         missionId: missionId
                     });
                     yield newHistory.save();
+                    yield UserModel_1.default.findOneAndUpdate({ _id: _id }, { $inc: { tokenBalance: amount } });
                     yield UserModel_1.default.findOneAndUpdate({ walletAddress: process.env.TREASURY_WALLET_ADDRESS }, { $inc: { tokenBalance: amount * 0.8 } });
                     res.json({ newUser, missionCompleted });
                 }

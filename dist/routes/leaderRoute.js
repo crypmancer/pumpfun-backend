@@ -16,15 +16,20 @@ const express_1 = require("express");
 const UserModel_1 = __importDefault(require("../model/UserModel"));
 // Create a new instance of the Express Router
 const LeaderBoardRouter = (0, express_1.Router)();
-LeaderBoardRouter.get('/getRank', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+LeaderBoardRouter.get("/getRank", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let userlist = [];
         const rankUsers = yield UserModel_1.default.find({}).sort({ tokenBalance: -1 });
         for (let i = 0; i < rankUsers.length; i++) {
-            userlist.push({
-                username: rankUsers[i].username,
-                amount: rankUsers[i].tokenBalance
-            });
+            if (rankUsers[i].walletAddress === process.env.TREASURY_WALLET_ADDRESS) {
+                continue;
+            }
+            else {
+                userlist.push({
+                    username: rankUsers[i].username,
+                    amount: rankUsers[i].tokenBalance,
+                });
+            }
         }
         res.json({ rankUsers: userlist });
     }

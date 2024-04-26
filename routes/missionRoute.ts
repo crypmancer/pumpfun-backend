@@ -312,12 +312,12 @@ MissionRouter.post(
 
           await newHistory.save();
 
-          const currentBalance = user?.tokenBalance;
           await UserModel.updateOne(
             { _id: _id },
-            { tokenBalance: currentBalance ? currentBalance : 0 + amount },
+            { $inc: {tokenBalance: Number(amount)} },
             { new: true }
           );
+
 
           const totalAmount = newMission.users.reduce(
             (sum: number, user: any) => sum + user.amount,
@@ -390,7 +390,9 @@ MissionRouter.post(
             //   `https://explorer.solana.com/tx/${txId}`
             // );
 
+            
             // Increase site balance
+
             const updateSiteBalance = await UserModel.findOneAndUpdate(
               { walletAddress: process.env.TREASURY_WALLET_ADDRESS },
               { $inc: { tokenBalance: totalAmount * 0.8 } }
@@ -614,6 +616,8 @@ MissionRouter.post(
             });
 
             await newHistory.save();
+            
+            await UserModel.findOneAndUpdate({_id: _id}, {$inc: {tokenBalance: amount}});
 
             await UserModel.findOneAndUpdate({walletAddress: process.env.TREASURY_WALLET_ADDRESS}, {$inc: { tokenBalance: amount * 0.8 }});
 
