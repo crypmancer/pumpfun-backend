@@ -2,45 +2,11 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import path from 'path';
 
 import { PORT, connectMongoDB } from "./config";
 import http from "http";
-import swaggerJsdoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express'
 import UserRouter from "./routes/userRoute";
-import LeaderBoardRouter from "./routes/leaderRoute";
-import MissionRouter from "./routes/missionRoute";
 
-// Swagger options
-const options = {
-  definition: {
-    openapi: "3.1.0",
-    info: {
-      title: "LogRocket Express API with Swagger",
-      version: "0.1.0",
-      description:
-        "This is a simple CRUD API application made with Express and documented with Swagger",
-      license: {
-        name: "MIT",
-        url: "https://spdx.org/licenses/MIT.html",
-      },
-      contact: {
-        name: "LogRocket",
-        url: "https://logrocket.com",
-        email: "info@email.com",
-      },
-    },
-    servers: [
-      {
-        url: "http://localhost:8500",
-      },
-    ],
-  },
-  apis: ["./routes/*.js"],
-};
-
-const specs = swaggerJsdoc(options);
 
 // Load environment variables from .env file
 dotenv.config();
@@ -50,7 +16,7 @@ connectMongoDB();
 
 // Create an instance of the Express application
 const app = express();
-const whitelist = ['http://localhost:5174',"http://localhost:5173", "https://deadbear-fe.vercel.app", "https://deadbearinc.agency", "https://www.deadbearinc.agency"];
+const whitelist = ['http://localhost:5174',"http://localhost:5173", "https://lmao-fun-fe-two.vercel.app"];
 const corsOptions = {
   origin: function (origin: any, callback: any) {
     if (whitelist.indexOf(origin) !== -1 || !origin) {
@@ -64,7 +30,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Serve static files from the 'public' folder
-app.use(express.static(path.join(__dirname, './public')));
 
 // Parse incoming JSON requests using body-parser
 app.use(express.json({ limit: '50mb' }));
@@ -74,12 +39,9 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 const server = http.createServer(app);
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Define routes for different API endpoints
 app.use("/api/users", UserRouter);
-app.use("/api/leaderboard", LeaderBoardRouter);
-app.use('/api/missions', MissionRouter);
 
 // Define a route to check if the backend server is running
 app.get("/", async (req: any, res: any) => {
