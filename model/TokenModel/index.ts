@@ -15,16 +15,16 @@ const TokenSchema = new mongoose.Schema({
   symbol: {
     type: String
   },
-  img_url: {
+  avatar: {
     type: String
   },
-  dec: {
+  decription: {
     type: String
   },
   supply: {
     type: Number,
   },
-  mktcap: {
+  marketcap: {
     type: Number
   },
   owner: {
