@@ -13,7 +13,19 @@ const UserSchema = new mongoose.Schema({
   created_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  tokens: [
+    {
+      token: {
+        type: Types.ObjectId,
+        ref: 'token'
+      },
+      amount: {
+        type: Number,
+        required: true
+      }
+    }
+  ]
 });
 
 const UserModel = mongoose.model("user", UserSchema);
