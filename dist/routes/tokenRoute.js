@@ -28,8 +28,8 @@ const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.e
 // @desc     Token Creation
 // @access   Public
 TokenRouter.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
-    const { name, address, decimal, symbol, avatar, decription, supply, marketcap, owner, signature, } = req.body;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    const { avatar, owner, signature, } = req.body;
     try {
         // if(!name || !address || !decimal || !symbol || !avatar || !decription || !supply || !marketcap || !owner) return res.status(500).json({success: false, err: "Please provide exact values!"});
         const isTransaction = yield TransactionModel_1.default.findOne({
@@ -44,8 +44,8 @@ TokenRouter.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, func
             return res
                 .status(500)
                 .json({ success: false, err: "This user does not exist!" });
-        const txDetails = yield connection.getParsedTransaction(signature);
-        // console.log('get signature', txDetails)
+        const txDetails = yield connection.getParsedTransaction(signature, 'confirmed');
+        console.log('get signature', txDetails);
         if (!txDetails)
             return res.status(500).json({ succss: false, err: "Invalid signature!" });
         try {
@@ -88,7 +88,7 @@ TokenRouter.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, func
                 name: (_l = tokenInfo.data) === null || _l === void 0 ? void 0 : _l.name,
                 address: tokenAddr,
                 symbol: (_m = tokenInfo.data) === null || _m === void 0 ? void 0 : _m.symbol,
-                avatar: (_o = tokenInfo.data) === null || _o === void 0 ? void 0 : _o.uri,
+                avatar: avatar,
                 //@ts-ignore
                 description: tokenInfo.data.description,
                 supply: remaindTokenBalance,
@@ -281,6 +281,43 @@ TokenRouter.post("/sell", (req, res) => __awaiter(void 0, void 0, void 0, functi
     catch (error) {
         console.log("token selling error => ", error);
         res.status(500).json({ success: false, err: error });
+    }
+}));
+// @route   GET api/tokens/getAll
+// @desc    Get all tokens
+// @acess   Public
+TokenRouter.get('/getAll', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('getting all tokens');
+    try {
+        const tokens = yield TokenModel_1.default.find({});
+        let resTokens = [];
+        for (let i = 0; i < tokens.length; i++) {
+            const buy = yield TransactionModel_1.default.find({ type: 'buy', token: tokens[i].address });
+            let buyCount = 0;
+            if (buy)
+                buyCount = buy.length;
+            const sell = yield TransactionModel_1.default.find({ type: 'sell', token: tokens[i].address });
+            let sellCount = 0;
+            if (sell)
+                sellCount = sell.length;
+            const newData = {
+                tokenSymbol: tokens[i].symbol,
+                tokenImage: tokens[i].avatar,
+                creator: tokens[i].owner,
+                liquidity: tokens[i].supply,
+                marketcap: tokens[i].marketcap,
+                txnsBuy: buyCount,
+                txnsSell: sellCount,
+                tokenAddr: tokens[i].address,
+                tokenName: tokens[i].name
+            };
+            resTokens.push(newData);
+        }
+        res.json({ success: true, tokens: resTokens });
+    }
+    catch (error) {
+        console.log('get all => ', error);
+        res.status(500).json({ success: false });
     }
 }));
 exports.default = TokenRouter;

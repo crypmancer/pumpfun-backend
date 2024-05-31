@@ -5,7 +5,7 @@ import User from "../model/UserModel";
 import { authMiddleware, AuthRequest } from "../middleware";
 import { JWT_SECRET } from "../config";
 
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey, Transaction } from "@solana/web3.js";
 
 import UserModel from "../model/UserModel";
 import TokenModel from "../model/TokenModel";
@@ -34,14 +34,7 @@ const connection = new Connection(
 // @access   Public
 TokenRouter.post("/create", async (req: Request, res: Response) => {
   const {
-    name,
-    address,
-    decimal,
-    symbol,
     avatar,
-    decription,
-    supply,
-    marketcap,
     owner,
     signature,
   } = req.body;
@@ -61,8 +54,8 @@ TokenRouter.post("/create", async (req: Request, res: Response) => {
       return res
         .status(500)
         .json({ success: false, err: "This user does not exist!" });
-    const txDetails = await connection.getParsedTransaction(signature);
-    // console.log('get signature', txDetails)
+    const txDetails = await connection.getParsedTransaction(signature, 'confirmed');
+    console.log('get signature', txDetails)
     if (!txDetails)
       return res.status(500).json({ succss: false, err: "Invalid signature!" });
 
@@ -115,7 +108,7 @@ TokenRouter.post("/create", async (req: Request, res: Response) => {
         name: tokenInfo.data?.name,
         address: tokenAddr,
         symbol: tokenInfo.data?.symbol,
-        avatar: tokenInfo.data?.uri,
+        avatar: avatar,
         //@ts-ignore
         description: tokenInfo.data.description,
         supply: remaindTokenBalance,
@@ -387,5 +380,40 @@ TokenRouter.post("/sell", async (req: Request, res: Response) => {
     res.status(500).json({ success: false, err: error });
   }
 });
+
+// @route   GET api/tokens/getAll
+// @desc    Get all tokens
+// @acess   Public
+TokenRouter.get('/getAll', async (req: Request, res: Response) => {
+  console.log('getting all tokens')
+  try {
+    const tokens = await TokenModel.find({});
+    let resTokens = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const buy = await TransactionModel.find({type: 'buy', token: tokens[i].address});
+      let buyCount = 0;
+      if(buy) buyCount = buy.length;
+      const sell = await TransactionModel.find({type: 'sell', token: tokens[i].address});
+      let sellCount = 0;
+      if(sell) sellCount = sell.length;
+      const newData = {
+        tokenSymbol: tokens[i].symbol,
+        tokenImage: tokens[i].avatar,
+        creator: tokens[i].owner,
+        liquidity: tokens[i].supply,
+        marketcap: tokens[i].marketcap,
+        txnsBuy: buyCount,
+        txnsSell: sellCount,
+        tokenAddr: tokens[i].address,
+        tokenName: tokens[i].name
+      }
+      resTokens.push(newData);
+    }
+    res.json({success: true, tokens: resTokens})
+  } catch (error) {
+    console.log('get all => ', error);
+    res.status(500).json({success: false})
+  }
+})
 
 export default TokenRouter;
