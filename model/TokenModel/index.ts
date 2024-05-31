@@ -7,10 +7,12 @@ const TokenSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   decimal: {
     type: Number,
+    default: 9
   },
   symbol: {
     type: String
@@ -23,13 +25,18 @@ const TokenSchema = new mongoose.Schema({
   },
   supply: {
     type: Number,
+    default: 10 ** 9
   },
   marketcap: {
-    type: Number
+    type: Number,
+    default: 0
+  },
+  price: {
+    type: Number,
+    default: 0
   },
   owner: {
-    type: Types.ObjectId,
-    ref: 'user'
+    type: String,
   }
 });
 

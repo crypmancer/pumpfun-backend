@@ -16,8 +16,8 @@ const UserSchema = new mongoose.Schema({
   },
   tokens: [
     {
-      token: {
-        type: Types.ObjectId,
+      address: {
+        type: String,
         ref: 'token'
       },
       amount: {

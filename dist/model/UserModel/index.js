@@ -17,7 +17,19 @@ const UserSchema = new mongoose_1.default.Schema({
     created_at: {
         type: Date,
         default: Date.now
-    }
+    },
+    tokens: [
+        {
+            address: {
+                type: String,
+                ref: 'token'
+            },
+            amount: {
+                type: Number,
+                required: true
+            }
+        }
+    ]
 });
 const UserModel = mongoose_1.default.model("user", UserSchema);
 exports.default = UserModel;

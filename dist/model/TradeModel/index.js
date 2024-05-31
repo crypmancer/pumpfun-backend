@@ -1,0 +1,26 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const TradeSchema = new mongoose_1.default.Schema({
+    token: {
+        type: String,
+        ref: 'token'
+    },
+    price: {
+        type: Number
+    },
+    timestamp: {
+        type: String
+    },
+    volume: {
+        type: Number,
+    },
+    supply: {
+        type: Number
+    }
+});
+const TradeModel = mongoose_1.default.model("trade", TradeSchema);
+exports.default = TradeModel;

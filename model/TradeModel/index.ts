@@ -2,13 +2,13 @@ import mongoose, { Types } from "mongoose";
 
 const TradeSchema = new mongoose.Schema({
   token: {
-    type: Types.ObjectId,
+    type: String,
     ref: 'token'
   },
   price: { 
     type: Number
   },
-  timestap: {
+  timestamp: {
     type: String
   },
   volume: {

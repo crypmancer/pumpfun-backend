@@ -6,11 +6,11 @@ const TransactionSchema = new mongoose.Schema({
     default: 'buy' // create / buy / sell
   },
   token: {
-    type: Types.ObjectId,
+    type: String,
     ref: 'token'
   },
   user: {
-    type: Types.ObjectId,
+    type: String,
     ref: 'user'
   },
   signature: {

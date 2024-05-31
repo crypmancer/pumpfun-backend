@@ -6,6 +6,10 @@ import express from "express";
 import { PORT, connectMongoDB } from "./config";
 import http from "http";
 import UserRouter from "./routes/userRoute";
+import TokenRouter from "./routes/tokenRoute";
+
+import cron from 'node-cron';
+import { updatePermins } from "./routes/tradeRoute";
 
 
 // Load environment variables from .env file
@@ -16,7 +20,7 @@ connectMongoDB();
 
 // Create an instance of the Express application
 const app = express();
-const whitelist = ['http://localhost:5174',"http://localhost:5173", "https://lmao-fun-fe-two.vercel.app"];
+const whitelist = ["http://localhost:5173"];
 const corsOptions = {
   origin: function (origin: any, callback: any) {
     if (whitelist.indexOf(origin) !== -1 || !origin) {
@@ -39,9 +43,12 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 const server = http.createServer(app);
 
+cron.schedule(`* * * * *`, updatePermins)
 
 // Define routes for different API endpoints
 app.use("/api/users", UserRouter);
+app.use("/api/tokens", TokenRouter);
+
 
 // Define a route to check if the backend server is running
 app.get("/", async (req: any, res: any) => {
