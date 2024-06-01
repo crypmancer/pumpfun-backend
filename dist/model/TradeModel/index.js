@@ -7,10 +7,11 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const TradeSchema = new mongoose_1.default.Schema({
     token: {
         type: String,
-        ref: 'token'
+        required: true
     },
     price: {
-        type: Number
+        type: Number,
+        default: 0
     },
     timestamp: {
         type: String

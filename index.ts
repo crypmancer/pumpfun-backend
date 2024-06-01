@@ -43,7 +43,7 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 const server = http.createServer(app);
 
-cron.schedule(`* * * * *`, updatePermins)
+// cron.schedule(`* * * * * *`, updatePermins)
 
 // Define routes for different API endpoints
 app.use("/api/users", UserRouter);

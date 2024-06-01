@@ -12,11 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePermins = void 0;
+exports.filterLast10Days = exports.parseTimestamp = exports.updatePermins = exports.getCurrentFormattedDateTime = void 0;
 const TokenModel_1 = __importDefault(require("../model/TokenModel"));
 const TradeModel_1 = __importDefault(require("../model/TradeModel"));
-const getCurrentFormattedDateTime = () => {
-    const date = new Date();
+const getCurrentFormattedDateTime = (convertdate) => {
+    const date = convertdate ? new Date(convertdate) : new Date();
     // Extract year, month, day, hours, minutes, and seconds
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -28,9 +28,10 @@ const getCurrentFormattedDateTime = () => {
     const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     return formattedDateTime;
 };
+exports.getCurrentFormattedDateTime = getCurrentFormattedDateTime;
 const updatePermins = () => __awaiter(void 0, void 0, void 0, function* () {
     const tokens = yield TokenModel_1.default.find({});
-    const currentTime = getCurrentFormattedDateTime();
+    const currentTime = (0, exports.getCurrentFormattedDateTime)();
     console.log(`--------------updating token dates--------------\nCurrent time => ${currentTime}`);
     for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
@@ -45,19 +46,21 @@ const updatePermins = () => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.updatePermins = updatePermins;
-function parseTimestamp(timestampString) {
+const parseTimestamp = (timestampString) => {
     const [datePart, timePart] = timestampString.split(" ");
     const [year, month, day] = datePart.split("-");
     const [hour, minute, second] = timePart.split(":");
     return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
-}
+};
+exports.parseTimestamp = parseTimestamp;
 // Function to filter data within the last 10 days
-function filterLast10Days(data) {
+const filterLast10Days = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const now = new Date();
     const tenDaysAgo = new Date();
     tenDaysAgo.setDate(now.getDate() - 10);
     return data.filter((item) => {
-        const itemDate = parseTimestamp(item.timestamp);
+        const itemDate = (0, exports.parseTimestamp)(item.timestamp);
         return itemDate >= tenDaysAgo && itemDate <= now;
     });
-}
+});
+exports.filterLast10Days = filterLast10Days;

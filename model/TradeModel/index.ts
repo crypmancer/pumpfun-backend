@@ -3,10 +3,11 @@ import mongoose, { Types } from "mongoose";
 const TradeSchema = new mongoose.Schema({
   token: {
     type: String,
-    ref: 'token'
+    required: true
   },
   price: { 
-    type: Number
+    type: Number,
+    default: 0
   },
   timestamp: {
     type: String

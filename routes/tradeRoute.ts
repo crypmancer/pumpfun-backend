@@ -9,8 +9,8 @@ interface Trade {
   supply: number;
 }
 
-const getCurrentFormattedDateTime = () => {
-  const date = new Date();
+export const getCurrentFormattedDateTime = (convertdate?: number) => {
+  const date = convertdate?new Date(convertdate):new Date();
 
   // Extract year, month, day, hours, minutes, and seconds
   const year = date.getFullYear();
@@ -45,7 +45,7 @@ export const updatePermins = async () => {
   }
 };
 
-function parseTimestamp(timestampString: string) {
+export const parseTimestamp = (timestampString: string) => {
   const [datePart, timePart] = timestampString.split(" ");
   const [year, month, day] = datePart.split("-");
   const [hour, minute, second] = timePart.split(":");
@@ -60,7 +60,7 @@ function parseTimestamp(timestampString: string) {
 }
 
 // Function to filter data within the last 10 days
-function filterLast10Days(data: Trade[]) {
+export const filterLast10Days = async (data: Trade[]) => {
   const now = new Date();
   const tenDaysAgo = new Date();
   tenDaysAgo.setDate(now.getDate() - 10);

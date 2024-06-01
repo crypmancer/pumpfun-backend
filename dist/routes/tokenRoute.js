@@ -20,6 +20,8 @@ const TransactionModel_1 = __importDefault(require("../model/TransactionModel"))
 const getInfo_1 = require("../utils/getInfo");
 const config_1 = require("../contract/config");
 const spl_token_1 = require("@solana/spl-token");
+const TradeModel_1 = __importDefault(require("../model/TradeModel"));
+const tradeRoute_1 = require("./tradeRoute");
 // Create a new instance of the Express Router
 const TokenRouter = (0, express_1.Router)();
 const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.env.RPC_ENDPOINT : (0, web3_js_1.clusterApiUrl)("devnet"));
@@ -319,5 +321,187 @@ TokenRouter.get('/getAll', (req, res) => __awaiter(void 0, void 0, void 0, funct
         console.log('get all => ', error);
         res.status(500).json({ success: false });
     }
+}));
+const sampleData = [
+    { "timestamp": 1609459200000, "price": 109.48 },
+    { "timestamp": 1609459201000, "price": 91.54 },
+    { "timestamp": 1609459202000, "price": 108.32 },
+    { "timestamp": 1609459203000, "price": 103.89 },
+    { "timestamp": 1609459204000, "price": 93.47 },
+    { "timestamp": 1609459205000, "price": 108.22 },
+    { "timestamp": 1609459206000, "price": 96.21 },
+    { "timestamp": 1609459207000, "price": 92.78 },
+    { "timestamp": 1609459208000, "price": 103.66 },
+    { "timestamp": 1609459209000, "price": 94.07 },
+    { "timestamp": 1609459210000, "price": 90.08 },
+    { "timestamp": 1609459211000, "price": 104.96 },
+    { "timestamp": 1609459212000, "price": 100.84 },
+    { "timestamp": 1609459213000, "price": 101.52 },
+    { "timestamp": 1609459214000, "price": 100.27 },
+    { "timestamp": 1609459215000, "price": 90.89 },
+    { "timestamp": 1609459216000, "price": 109.13 },
+    { "timestamp": 1609459217000, "price": 90.76 },
+    { "timestamp": 1609459218000, "price": 94.21 },
+    { "timestamp": 1609459219000, "price": 95.57 },
+    { "timestamp": 1609459220000, "price": 108.96 },
+    { "timestamp": 1609459221000, "price": 96.72 },
+    { "timestamp": 1609459222000, "price": 90.29 },
+    { "timestamp": 1609459223000, "price": 106.79 },
+    { "timestamp": 1609459224000, "price": 103.88 },
+    { "timestamp": 1609459225000, "price": 90.35 },
+    { "timestamp": 1609459226000, "price": 92.81 },
+    { "timestamp": 1609459227000, "price": 92.33 },
+    { "timestamp": 1609459228000, "price": 100.87 },
+    { "timestamp": 1609459229000, "price": 104.88 },
+    { "timestamp": 1609459230000, "price": 91.47 },
+    { "timestamp": 1609459231000, "price": 101.45 },
+    { "timestamp": 1609459232000, "price": 103.45 },
+    { "timestamp": 1609459233000, "price": 91.16 },
+    { "timestamp": 1609459234000, "price": 96.75 },
+    { "timestamp": 1609459235000, "price": 108.76 },
+    { "timestamp": 1609459236000, "price": 91.58 },
+    { "timestamp": 1609459237000, "price": 106.78 },
+    { "timestamp": 1609459238000, "price": 109.68 },
+    { "timestamp": 1609459239000, "price": 105.78 },
+    { "timestamp": 1609459240000, "price": 106.05 },
+    { "timestamp": 1609459241000, "price": 95.69 },
+    { "timestamp": 1609459242000, "price": 109.24 },
+    { "timestamp": 1609459243000, "price": 93.62 },
+    { "timestamp": 1609459244000, "price": 92.06 },
+    { "timestamp": 1609459245000, "price": 108.53 },
+    { "timestamp": 1609459246000, "price": 105.14 },
+    { "timestamp": 1609459247000, "price": 106.16 },
+    { "timestamp": 1609459248000, "price": 104.22 },
+    { "timestamp": 1609459249000, "price": 93.26 },
+    { "timestamp": 1609459250000, "price": 95.33 },
+    { "timestamp": 1609459251000, "price": 96.18 },
+    { "timestamp": 1609459252000, "price": 97.89 },
+    { "timestamp": 1609459253000, "price": 102.02 },
+    { "timestamp": 1609459254000, "price": 90.13 },
+    { "timestamp": 1609459255000, "price": 97.83 },
+    { "timestamp": 1609459256000, "price": 104.86 },
+    { "timestamp": 1609459257000, "price": 91.92 },
+    { "timestamp": 1609459258000, "price": 94.76 },
+    { "timestamp": 1609459259000, "price": 109.11 },
+    { "timestamp": 1609459260000, "price": 92.23 },
+    { "timestamp": 1609459261000, "price": 105.19 },
+    { "timestamp": 1609459262000, "price": 104.96 },
+    { "timestamp": 1609459263000, "price": 106.42 },
+    { "timestamp": 1609459264000, "price": 105.67 },
+    { "timestamp": 1609459265000, "price": 108.91 },
+    { "timestamp": 1609459266000, "price": 109.28 },
+    { "timestamp": 1609459267000, "price": 94.37 },
+    { "timestamp": 1609459268000, "price": 98.75 },
+    { "timestamp": 1609459269000, "price": 105.92 },
+    { "timestamp": 1609459270000, "price": 109.96 },
+    { "timestamp": 1609459271000, "price": 94.85 },
+    { "timestamp": 1609459272000, "price": 92.88 },
+    { "timestamp": 1609459273000, "price": 103.27 },
+    { "timestamp": 1609459274000, "price": 102.38 },
+    { "timestamp": 1609459275000, "price": 98.61 },
+    { "timestamp": 1609459276000, "price": 100.99 },
+    { "timestamp": 1609459277000, "price": 93.02 },
+    { "timestamp": 1609459278000, "price": 104.89 },
+    { "timestamp": 1609459279000, "price": 106.26 },
+    { "timestamp": 1609459280000, "price": 98.73 },
+    { "timestamp": 1609459281000, "price": 109.93 },
+    { "timestamp": 1609459282000, "price": 108.61 },
+    { "timestamp": 1609459283000, "price": 108.32 },
+    { "timestamp": 1609459284000, "price": 100.69 },
+    { "timestamp": 1609459285000, "price": 106.99 },
+    { "timestamp": 1609459286000, "price": 103.18 },
+    { "timestamp": 1609459287000, "price": 109.91 },
+    { "timestamp": 1609459288000, "price": 106.25 },
+    { "timestamp": 1609459289000, "price": 99.97 },
+    { "timestamp": 1609459290000, "price": 107.09 },
+    { "timestamp": 1609459291000, "price": 103.73 },
+    { "timestamp": 1609459292000, "price": 100.12 },
+    { "timestamp": 1609459293000, "price": 95.12 },
+    { "timestamp": 1609459294000, "price": 92.09 },
+    { "timestamp": 1609459295000, "price": 108.71 },
+    { "timestamp": 1609459296000, "price": 104.95 },
+    { "timestamp": 1609459297000, "price": 92.99 },
+    { "timestamp": 1609459298000, "price": 91.56 },
+    { "timestamp": 1609459299000, "price": 107.36 },
+    { "timestamp": 1609459300000, "price": 98.03 },
+    { "timestamp": 1609459301000, "price": 106.11 },
+    { "timestamp": 1609459302000, "price": 90.73 },
+    { "timestamp": 1609459303000, "price": 98.68 },
+    { "timestamp": 1609459304000, "price": 95.31 },
+    { "timestamp": 1609459305000, "price": 99.94 },
+];
+function processIntervals(data) {
+    // Step 1: Sort the array by timestamp
+    data.sort((a, b) => a.timestamp - b.timestamp);
+    // Step 2: Initialize variables
+    const intervalDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const result = [];
+    let intervalStart = null;
+    let intervalEnd = null;
+    let startPrice = null;
+    let endPrice = null;
+    let maxPrice = -Infinity;
+    let minPrice = Infinity;
+    // Step 3: Process each entry in the sorted array
+    data.forEach((entry, index) => {
+        const currentTime = entry.timestamp;
+        // Initialize interval start if not set
+        if (intervalStart === null) {
+            intervalStart = currentTime;
+            startPrice = entry.price;
+        }
+        // Determine if the current entry is within the current interval
+        if (currentTime < intervalStart + intervalDuration) {
+            // Update end price and other statistics within the interval
+            intervalEnd = currentTime;
+            endPrice = entry.price;
+            maxPrice = Math.max(maxPrice, entry.price);
+            minPrice = Math.min(minPrice, entry.price);
+        }
+        else {
+            // Push the previous interval's data to result
+            result.push({
+                open: startPrice,
+                close: endPrice,
+                high: maxPrice,
+                low: minPrice,
+                date: (0, tradeRoute_1.getCurrentFormattedDateTime)(currentTime)
+            });
+            // Reset for the new interval
+            intervalStart = currentTime;
+            startPrice = entry.price;
+            intervalEnd = currentTime;
+            endPrice = entry.price;
+            maxPrice = entry.price;
+            minPrice = entry.price;
+        }
+        // Handle the last entry to ensure it gets included
+        if (index === data.length - 1) {
+            result.push({
+                open: startPrice,
+                close: endPrice,
+                high: maxPrice,
+                low: minPrice,
+                date: (0, tradeRoute_1.getCurrentFormattedDateTime)(currentTime)
+            });
+        }
+    });
+    return result;
+}
+// @route   GET api/tokens/:tokenId
+// @desc    Get one tokens info
+// @access  Public
+TokenRouter.get('/:tokenId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { tokenId } = req.params;
+    const token = yield TokenModel_1.default.findOne({ address: tokenId });
+    if (!token)
+        return res.status(500).json({ success: false, err: "This token does not exist!" });
+    const tradeHis = yield TradeModel_1.default.find({ token: tokenId });
+    if (tradeHis.length === 0)
+        return res.status(500).json({ success: false, err: "This token has no data!" });
+    //@ts-ignore
+    const newArr = processIntervals(tradeHis);
+    console.log('new array => ', newArr);
+    res.json({ trades: newArr });
 }));
 exports.default = TokenRouter;

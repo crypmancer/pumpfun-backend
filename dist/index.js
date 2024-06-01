@@ -20,8 +20,6 @@ const config_1 = require("./config");
 const http_1 = __importDefault(require("http"));
 const userRoute_1 = __importDefault(require("./routes/userRoute"));
 const tokenRoute_1 = __importDefault(require("./routes/tokenRoute"));
-const node_cron_1 = __importDefault(require("node-cron"));
-const tradeRoute_1 = require("./routes/tradeRoute");
 // Load environment variables from .env file
 dotenv_1.default.config();
 // Connect to the MongoDB database
@@ -48,7 +46,7 @@ app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 app.use(body_parser_1.default.json({ limit: '50mb' }));
 app.use(body_parser_1.default.urlencoded({ limit: '50mb', extended: true }));
 const server = http_1.default.createServer(app);
-node_cron_1.default.schedule(`* * * * *`, tradeRoute_1.updatePermins);
+// cron.schedule(`* * * * * *`, updatePermins)
 // Define routes for different API endpoints
 app.use("/api/users", userRoute_1.default);
 app.use("/api/tokens", tokenRoute_1.default);
