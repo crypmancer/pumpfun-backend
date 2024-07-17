@@ -17,10 +17,14 @@ const TransactionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  amount: {
+    type: Number,
+    default: 0
+  },
   timestamp: {
     type: Date,
     default: Date.now
-  }
+  },
 });
 
 const TransactionModel = mongoose.model("transaction", TransactionSchema);

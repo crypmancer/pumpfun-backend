@@ -1,3 +1,4 @@
+
 import mongoose, { Types } from "mongoose";
 
 const TokenSchema = new mongoose.Schema({
@@ -18,7 +19,8 @@ const TokenSchema = new mongoose.Schema({
     type: String
   },
   avatar: {
-    type: String
+    type: String,
+    default: "https://arweave.net/iap6ASZe2-Aw3tUFiuiCBS7DWtt0tlK2GNmn9ZVwXX8"
   },
   decription: {
     type: String
@@ -32,6 +34,14 @@ const TokenSchema = new mongoose.Schema({
     default: 0
   },
   price: {
+    type: Number,
+    default: 0
+  },
+  buyvolume: {
+    type: Number,
+    default: 0
+  },
+  sellvolume: {
     type: Number,
     default: 0
   },

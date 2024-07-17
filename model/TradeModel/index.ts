@@ -10,7 +10,7 @@ const TradeSchema = new mongoose.Schema({
     default: 0
   },
   timestamp: {
-    type: String
+    type: Number
   },
   volume: {
     type: Number,
