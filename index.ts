@@ -31,7 +31,7 @@ const corsOptions = {
  },
 };
 // Set up Cross-Origin Resource Sharing (CORS) options
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 // Serve static files from the 'public' folder
 
