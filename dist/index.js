@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const body_parser_1 = __importDefault(require("body-parser"));
+const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const config_1 = require("./config");
@@ -25,7 +26,7 @@ dotenv_1.default.config();
 (0, config_1.connectMongoDB)();
 // Create an instance of the Express application
 const app = (0, express_1.default)();
-const whitelist = ["http://localhost:5173"];
+const whitelist = ["http://localhost:5173", "https://lmao-fun-beta-version.vercel.app"];
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1 || !origin) {
@@ -37,7 +38,7 @@ const corsOptions = {
     },
 };
 // Set up Cross-Origin Resource Sharing (CORS) options
-// app.use(cors(corsOptions));
+app.use((0, cors_1.default)(corsOptions));
 // Serve static files from the 'public' folder
 // Parse incoming JSON requests using body-parser
 app.use(express_1.default.json({ limit: '50mb' }));

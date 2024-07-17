@@ -20,7 +20,7 @@ connectMongoDB();
 
 // Create an instance of the Express application
 const app = express();
-const whitelist = ["http://localhost:5173"];
+const whitelist = ["http://localhost:5173", "https://lmao-fun-beta-version.vercel.app"];
 const corsOptions = {
   origin: function (origin: any, callback: any) {
     if (whitelist.indexOf(origin) !== -1 || !origin) {
@@ -31,7 +31,7 @@ const corsOptions = {
  },
 };
 // Set up Cross-Origin Resource Sharing (CORS) options
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 
 // Serve static files from the 'public' folder
 
