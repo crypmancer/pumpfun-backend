@@ -14,7 +14,7 @@ const TradeSchema = new mongoose_1.default.Schema({
         default: 0
     },
     timestamp: {
-        type: String
+        type: Number
     },
     volume: {
         type: Number,

@@ -30,8 +30,9 @@ const connection = new web3_js_1.Connection(process.env.RPC_ENDPOINT ? process.e
 // @desc     Token Creation
 // @access   Public
 TokenRouter.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
     const { avatar, owner, signature, } = req.body;
+    console.log('creating token => ....');
     try {
         // if(!name || !address || !decimal || !symbol || !avatar || !decription || !supply || !marketcap || !owner) return res.status(500).json({success: false, err: "Please provide exact values!"});
         const isTransaction = yield TransactionModel_1.default.findOne({
@@ -74,7 +75,7 @@ TokenRouter.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, func
             }
             else {
                 //@ts-ignore
-                remaindTokenBalance = (_k = txDetails.meta) === null || _k === void 0 ? void 0 : _k.postTokenBalances[0];
+                remaindTokenBalance = (_k = txDetails.meta) === null || _k === void 0 ? void 0 : _k.postTokenBalances[0].uiTokenAmount.amount;
             }
             console.log("bought token amount => ", boughtTokenBalance);
             console.log("remaind token abount => ", remaindTokenBalance);
@@ -86,11 +87,14 @@ TokenRouter.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, func
                 return res
                     .status(500)
                     .json({ success: false, err: "This token does not exist!" });
+            //@ts-ignore
+            const getAvatar = yield (0, getInfo_1.fetchImage)((_l = tokenInfo.data) === null || _l === void 0 ? void 0 : _l.uri);
+            console.log('getavatar => ', getAvatar);
             const newToken = new TokenModel_1.default({
-                name: (_l = tokenInfo.data) === null || _l === void 0 ? void 0 : _l.name,
+                name: (_m = tokenInfo.data) === null || _m === void 0 ? void 0 : _m.name,
                 address: tokenAddr,
-                symbol: (_m = tokenInfo.data) === null || _m === void 0 ? void 0 : _m.symbol,
-                avatar: avatar,
+                symbol: (_o = tokenInfo.data) === null || _o === void 0 ? void 0 : _o.symbol,
+                avatar: getAvatar,
                 //@ts-ignore
                 description: tokenInfo.data.description,
                 supply: remaindTokenBalance,
@@ -160,20 +164,36 @@ TokenRouter.post("/buy", (req, res) => __awaiter(void 0, void 0, void 0, functio
         const buyerPub = new web3_js_1.PublicKey(buyer);
         try {
             //-------------------calculating balance of my account-------------------//
-            const mytokenAccount = yield (0, spl_token_1.getAssociatedTokenAddress)(tokenPub, buyerPub, true);
-            const mytokenAccData = yield connection.getTokenAccountBalance(mytokenAccount);
-            const mytokenAmount = mytokenAccData.value.uiAmount;
-            const isMyToken = yield UserModel_1.default.findOne({
-                walletAddress: buyer,
-                "tokens.address": token,
-            });
-            let updatedUser;
-            if (isMyToken) {
-                updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: buyer, "tokens.address": token }, { "tokens.$.amount": mytokenAmount });
-            }
-            else {
-                updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: buyer }, { $push: { tokens: { address: token, amount: mytokenAmount } } });
-            }
+            // const mytokenAccount = await getAssociatedTokenAddress(
+            //   tokenPub,
+            //   buyerPub,
+            //   true
+            // );
+            // const mytokenAccData = await connection.getTokenAccountBalance(
+            //   mytokenAccount
+            // );
+            // const mytokenAmount = mytokenAccData.value.uiAmount;
+            // // const txDetails = await connection.getParsedTransaction(signature, 'confirmed');
+            // // //@ts-ignore
+            // // console.log('buy tx details => ', txDetails?.meta?.innerInstructions[0].instructions[0].parsed.info.lamports);
+            // // //@ts-ignore
+            // // const solAmount = txDetails?.meta?.innerInstructions[0].instructions[0].parsed.info.lamports / 10 ** 9
+            // const isMyToken = await UserModel.findOne({
+            //   walletAddress: buyer,
+            //   "tokens.address": token,
+            // });
+            // let updatedUser;
+            // if (isMyToken) {
+            //   updatedUser = await UserModel.findOneAndUpdate(
+            //     { walletAddress: buyer, "tokens.address": token },
+            //     { "tokens.$.amount": mytokenAmount }
+            //   );
+            // } else {
+            //   updatedUser = await UserModel.findOneAndUpdate(
+            //     { walletAddress: buyer },
+            //     { $push: { tokens: { address: token, amount: mytokenAmount } } }
+            //   );
+            // }
             //-------------------calculating balance of pool account--------------------//
             const [poolPda] = web3_js_1.PublicKey.findProgramAddressSync([Buffer.from(config_1.POOL_SEED_PREFIX), tokenPub.toBuffer()], config_1.programId);
             const poolToken = yield (0, spl_token_1.getAssociatedTokenAddress)(tokenPub, poolPda, true);
@@ -181,21 +201,25 @@ TokenRouter.post("/buy", (req, res) => __awaiter(void 0, void 0, void 0, functio
             const [poolSolVault] = web3_js_1.PublicKey.findProgramAddressSync([Buffer.from(config_1.SOL_VAULT_PREFIX), tokenPub.toBuffer()], config_1.programId);
             const poolSolBalance = yield connection.getBalance(poolSolVault);
             console.log("total token balance => ", poolTokenBalance.value.uiAmount);
-            console.log("total sol balance =>", poolSolBalance / Math.pow(10, 9));
+            console.log("before sol balance =>", isToken.marketcap);
+            console.log('amount => ', amount);
+            console.log("resut => ", isToken.marketcap + Number(amount));
             const tokenPrice = poolSolBalance / Number(poolTokenBalance.value.amount);
             yield TokenModel_1.default.findOneAndUpdate({ address: token }, {
-                marketcap: poolSolBalance,
+                marketcap: isToken.marketcap + Number(amount * Math.pow(10, 9)),
                 supply: poolTokenBalance.value.amount,
                 price: tokenPrice,
+                buyvolume: (isToken.buyvolume ? isToken.buyvolume : 0) + Number(amount)
             });
             const newTransactionSchema = new TransactionModel_1.default({
                 type: "buy",
                 token: token,
                 user: buyer,
                 signature: signature,
+                amount: amount
             });
             yield newTransactionSchema.save();
-            res.json({ success: true, user: updatedUser });
+            res.json({ success: true });
         }
         catch (error) {
             console.log("buy unexpected error => ", error);
@@ -211,6 +235,7 @@ TokenRouter.post("/buy", (req, res) => __awaiter(void 0, void 0, void 0, functio
 // @desc    Token sell
 // @access  Public
 TokenRouter.post("/sell", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _p, _q;
     const { seller, token, amount, signature } = req.body;
     try {
         if (!seller || !token || !amount)
@@ -236,22 +261,39 @@ TokenRouter.post("/sell", (req, res) => __awaiter(void 0, void 0, void 0, functi
                 .json({ success: false, err: "This signature already used!" });
         const tokenPub = new web3_js_1.PublicKey(token);
         const sellerPub = new web3_js_1.PublicKey(seller);
+        const txDetails = yield connection.getParsedTransaction(signature, 'confirmed');
+        //@ts-ignore
+        console.log('buy tx details => ', (_p = txDetails === null || txDetails === void 0 ? void 0 : txDetails.meta) === null || _p === void 0 ? void 0 : _p.innerInstructions[0].instructions[1].parsed.info.lamports);
+        //@ts-ignore
+        const solAmount = ((_q = txDetails === null || txDetails === void 0 ? void 0 : txDetails.meta) === null || _q === void 0 ? void 0 : _q.innerInstructions[0].instructions[1].parsed.info.lamports) / Math.pow(10, 9);
+        console.log('sol amount => ', solAmount);
         try {
             //-------------------calculating balance of my account-------------------//
-            const mytokenAccount = yield (0, spl_token_1.getAssociatedTokenAddress)(tokenPub, sellerPub, true);
-            const mytokenAccData = yield connection.getTokenAccountBalance(mytokenAccount);
-            const mytokenAmount = mytokenAccData.value.uiAmount;
-            const isMyToken = yield UserModel_1.default.findOne({
-                walletAddress: seller,
-                "tokens.address": token,
-            });
-            let updatedUser;
-            if (isMyToken) {
-                updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: seller, "tokens.address": token }, { "tokens.$.amount": mytokenAmount });
-            }
-            else {
-                updatedUser = yield UserModel_1.default.findOneAndUpdate({ walletAddress: seller }, { $push: { tokens: { address: token, amount: mytokenAmount } } });
-            }
+            // const mytokenAccount = await getAssociatedTokenAddress(
+            //   tokenPub,
+            //   sellerPub,
+            //   true
+            // );
+            // const mytokenAccData = await connection.getTokenAccountBalance(
+            //   mytokenAccount
+            // );
+            // const mytokenAmount = mytokenAccData.value.uiAmount;
+            // const isMyToken = await UserModel.findOne({
+            //   walletAddress: seller,
+            //   "tokens.address": token,
+            // });
+            // let updatedUser;
+            // if (isMyToken) {
+            //   updatedUser = await UserModel.findOneAndUpdate(
+            //     { walletAddress: seller, "tokens.address": token },
+            //     { "tokens.$.amount": mytokenAmount }
+            //   );
+            // } else {
+            //   updatedUser = await UserModel.findOneAndUpdate(
+            //     { walletAddress: seller },
+            //     { $push: { tokens: { address: token, amount: mytokenAmount } } }
+            //   );
+            // }
             //-------------------calculating balance of pool account--------------------//
             const [poolPda] = web3_js_1.PublicKey.findProgramAddressSync([Buffer.from(config_1.POOL_SEED_PREFIX), tokenPub.toBuffer()], config_1.programId);
             const poolToken = yield (0, spl_token_1.getAssociatedTokenAddress)(tokenPub, poolPda, true);
@@ -262,21 +304,23 @@ TokenRouter.post("/sell", (req, res) => __awaiter(void 0, void 0, void 0, functi
             console.log("total sol balance =>", poolSolBalance / Math.pow(10, 9));
             const tokenPrice = poolSolBalance / Number(poolTokenBalance.value.amount);
             yield TokenModel_1.default.findOneAndUpdate({ address: token }, {
-                marketcap: poolSolBalance,
+                marketcap: isToken.marketcap - Number(solAmount * Math.pow(10, 9)),
                 supply: poolTokenBalance.value.amount,
                 price: tokenPrice,
+                sellvolume: (isToken.sellvolume ? isToken.sellvolume : 0) + Number(solAmount)
             });
             const newTransactionSchema = new TransactionModel_1.default({
-                type: "buy",
+                type: "sell",
                 token: token,
                 user: seller,
                 signature: signature,
+                amount: solAmount
             });
             yield newTransactionSchema.save();
-            res.json({ success: true, user: updatedUser });
+            res.json({ success: true });
         }
         catch (error) {
-            console.log("buy unexpected error => ", error);
+            console.log("sell unexpected error => ", error);
             res.status(500).json({ success: false, err: "Unexpected error occurd!" });
         }
     }
@@ -306,12 +350,15 @@ TokenRouter.get('/getAll', (req, res) => __awaiter(void 0, void 0, void 0, funct
                 tokenSymbol: tokens[i].symbol,
                 tokenImage: tokens[i].avatar,
                 creator: tokens[i].owner,
-                liquidity: tokens[i].supply,
-                marketcap: tokens[i].marketcap,
+                liquidity: tokens[i].supply / Math.pow(10, 9),
+                marketcap: tokens[i].marketcap / Math.pow(10, 9),
                 txnsBuy: buyCount,
                 txnsSell: sellCount,
                 tokenAddr: tokens[i].address,
-                tokenName: tokens[i].name
+                tokenName: tokens[i].name,
+                price: tokens[i].price,
+                buyVolume: tokens[i].buyvolume ? tokens[i].buyvolume : 0,
+                sellVolume: tokens[i].sellvolume ? tokens[i].sellvolume : 0
             };
             resTokens.push(newData);
         }
@@ -322,119 +369,11 @@ TokenRouter.get('/getAll', (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(500).json({ success: false });
     }
 }));
-const sampleData = [
-    { "timestamp": 1609459200000, "price": 109.48 },
-    { "timestamp": 1609459201000, "price": 91.54 },
-    { "timestamp": 1609459202000, "price": 108.32 },
-    { "timestamp": 1609459203000, "price": 103.89 },
-    { "timestamp": 1609459204000, "price": 93.47 },
-    { "timestamp": 1609459205000, "price": 108.22 },
-    { "timestamp": 1609459206000, "price": 96.21 },
-    { "timestamp": 1609459207000, "price": 92.78 },
-    { "timestamp": 1609459208000, "price": 103.66 },
-    { "timestamp": 1609459209000, "price": 94.07 },
-    { "timestamp": 1609459210000, "price": 90.08 },
-    { "timestamp": 1609459211000, "price": 104.96 },
-    { "timestamp": 1609459212000, "price": 100.84 },
-    { "timestamp": 1609459213000, "price": 101.52 },
-    { "timestamp": 1609459214000, "price": 100.27 },
-    { "timestamp": 1609459215000, "price": 90.89 },
-    { "timestamp": 1609459216000, "price": 109.13 },
-    { "timestamp": 1609459217000, "price": 90.76 },
-    { "timestamp": 1609459218000, "price": 94.21 },
-    { "timestamp": 1609459219000, "price": 95.57 },
-    { "timestamp": 1609459220000, "price": 108.96 },
-    { "timestamp": 1609459221000, "price": 96.72 },
-    { "timestamp": 1609459222000, "price": 90.29 },
-    { "timestamp": 1609459223000, "price": 106.79 },
-    { "timestamp": 1609459224000, "price": 103.88 },
-    { "timestamp": 1609459225000, "price": 90.35 },
-    { "timestamp": 1609459226000, "price": 92.81 },
-    { "timestamp": 1609459227000, "price": 92.33 },
-    { "timestamp": 1609459228000, "price": 100.87 },
-    { "timestamp": 1609459229000, "price": 104.88 },
-    { "timestamp": 1609459230000, "price": 91.47 },
-    { "timestamp": 1609459231000, "price": 101.45 },
-    { "timestamp": 1609459232000, "price": 103.45 },
-    { "timestamp": 1609459233000, "price": 91.16 },
-    { "timestamp": 1609459234000, "price": 96.75 },
-    { "timestamp": 1609459235000, "price": 108.76 },
-    { "timestamp": 1609459236000, "price": 91.58 },
-    { "timestamp": 1609459237000, "price": 106.78 },
-    { "timestamp": 1609459238000, "price": 109.68 },
-    { "timestamp": 1609459239000, "price": 105.78 },
-    { "timestamp": 1609459240000, "price": 106.05 },
-    { "timestamp": 1609459241000, "price": 95.69 },
-    { "timestamp": 1609459242000, "price": 109.24 },
-    { "timestamp": 1609459243000, "price": 93.62 },
-    { "timestamp": 1609459244000, "price": 92.06 },
-    { "timestamp": 1609459245000, "price": 108.53 },
-    { "timestamp": 1609459246000, "price": 105.14 },
-    { "timestamp": 1609459247000, "price": 106.16 },
-    { "timestamp": 1609459248000, "price": 104.22 },
-    { "timestamp": 1609459249000, "price": 93.26 },
-    { "timestamp": 1609459250000, "price": 95.33 },
-    { "timestamp": 1609459251000, "price": 96.18 },
-    { "timestamp": 1609459252000, "price": 97.89 },
-    { "timestamp": 1609459253000, "price": 102.02 },
-    { "timestamp": 1609459254000, "price": 90.13 },
-    { "timestamp": 1609459255000, "price": 97.83 },
-    { "timestamp": 1609459256000, "price": 104.86 },
-    { "timestamp": 1609459257000, "price": 91.92 },
-    { "timestamp": 1609459258000, "price": 94.76 },
-    { "timestamp": 1609459259000, "price": 109.11 },
-    { "timestamp": 1609459260000, "price": 92.23 },
-    { "timestamp": 1609459261000, "price": 105.19 },
-    { "timestamp": 1609459262000, "price": 104.96 },
-    { "timestamp": 1609459263000, "price": 106.42 },
-    { "timestamp": 1609459264000, "price": 105.67 },
-    { "timestamp": 1609459265000, "price": 108.91 },
-    { "timestamp": 1609459266000, "price": 109.28 },
-    { "timestamp": 1609459267000, "price": 94.37 },
-    { "timestamp": 1609459268000, "price": 98.75 },
-    { "timestamp": 1609459269000, "price": 105.92 },
-    { "timestamp": 1609459270000, "price": 109.96 },
-    { "timestamp": 1609459271000, "price": 94.85 },
-    { "timestamp": 1609459272000, "price": 92.88 },
-    { "timestamp": 1609459273000, "price": 103.27 },
-    { "timestamp": 1609459274000, "price": 102.38 },
-    { "timestamp": 1609459275000, "price": 98.61 },
-    { "timestamp": 1609459276000, "price": 100.99 },
-    { "timestamp": 1609459277000, "price": 93.02 },
-    { "timestamp": 1609459278000, "price": 104.89 },
-    { "timestamp": 1609459279000, "price": 106.26 },
-    { "timestamp": 1609459280000, "price": 98.73 },
-    { "timestamp": 1609459281000, "price": 109.93 },
-    { "timestamp": 1609459282000, "price": 108.61 },
-    { "timestamp": 1609459283000, "price": 108.32 },
-    { "timestamp": 1609459284000, "price": 100.69 },
-    { "timestamp": 1609459285000, "price": 106.99 },
-    { "timestamp": 1609459286000, "price": 103.18 },
-    { "timestamp": 1609459287000, "price": 109.91 },
-    { "timestamp": 1609459288000, "price": 106.25 },
-    { "timestamp": 1609459289000, "price": 99.97 },
-    { "timestamp": 1609459290000, "price": 107.09 },
-    { "timestamp": 1609459291000, "price": 103.73 },
-    { "timestamp": 1609459292000, "price": 100.12 },
-    { "timestamp": 1609459293000, "price": 95.12 },
-    { "timestamp": 1609459294000, "price": 92.09 },
-    { "timestamp": 1609459295000, "price": 108.71 },
-    { "timestamp": 1609459296000, "price": 104.95 },
-    { "timestamp": 1609459297000, "price": 92.99 },
-    { "timestamp": 1609459298000, "price": 91.56 },
-    { "timestamp": 1609459299000, "price": 107.36 },
-    { "timestamp": 1609459300000, "price": 98.03 },
-    { "timestamp": 1609459301000, "price": 106.11 },
-    { "timestamp": 1609459302000, "price": 90.73 },
-    { "timestamp": 1609459303000, "price": 98.68 },
-    { "timestamp": 1609459304000, "price": 95.31 },
-    { "timestamp": 1609459305000, "price": 99.94 },
-];
 function processIntervals(data) {
     // Step 1: Sort the array by timestamp
     data.sort((a, b) => a.timestamp - b.timestamp);
     // Step 2: Initialize variables
-    const intervalDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
+    const intervalDuration = 20 * 1000; // 5 minutes in milliseconds
     const result = [];
     let intervalStart = null;
     let intervalEnd = null;
@@ -442,6 +381,7 @@ function processIntervals(data) {
     let endPrice = null;
     let maxPrice = -Infinity;
     let minPrice = Infinity;
+    let lastClosePrice = null;
     // Step 3: Process each entry in the sorted array
     data.forEach((entry, index) => {
         const currentTime = entry.timestamp;
@@ -461,12 +401,14 @@ function processIntervals(data) {
         else {
             // Push the previous interval's data to result
             result.push({
-                open: startPrice,
+                open: lastClosePrice,
                 close: endPrice,
                 high: maxPrice,
                 low: minPrice,
-                date: (0, tradeRoute_1.getCurrentFormattedDateTime)(currentTime)
+                date: (0, tradeRoute_1.getCurrentFormattedDateTime)(currentTime),
+                volume: entry.volume
             });
+            lastClosePrice = endPrice;
             // Reset for the new interval
             intervalStart = currentTime;
             startPrice = entry.price;
@@ -482,7 +424,8 @@ function processIntervals(data) {
                 close: endPrice,
                 high: maxPrice,
                 low: minPrice,
-                date: (0, tradeRoute_1.getCurrentFormattedDateTime)(currentTime)
+                date: (0, tradeRoute_1.getCurrentFormattedDateTime)(currentTime),
+                volume: entry.volume
             });
         }
     });
@@ -501,7 +444,6 @@ TokenRouter.get('/:tokenId', (req, res) => __awaiter(void 0, void 0, void 0, fun
         return res.status(500).json({ success: false, err: "This token has no data!" });
     //@ts-ignore
     const newArr = processIntervals(tradeHis);
-    console.log('new array => ', newArr);
-    res.json({ trades: newArr });
+    res.json({ trades: newArr, token });
 }));
 exports.default = TokenRouter;

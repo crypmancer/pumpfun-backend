@@ -21,10 +21,14 @@ const TransactionSchema = new mongoose_1.default.Schema({
         type: String,
         required: true
     },
+    amount: {
+        type: Number,
+        default: 0
+    },
     timestamp: {
         type: Date,
         default: Date.now
-    }
+    },
 });
 const TransactionModel = mongoose_1.default.model("transaction", TransactionSchema);
 exports.default = TransactionModel;
